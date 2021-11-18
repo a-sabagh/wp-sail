@@ -1,6 +1,6 @@
 <?php
 
-namespace WORE\Packages;
+namespace WOAP\Packages;
 
 class QueryBuilder {
 
