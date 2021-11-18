@@ -31,6 +31,7 @@ class Init {
     }
 
     public function boot_modules() {
+		require_once trailingslashit(__DIR__) . 'Packages/QueryBuilder.php';
 		require_once trailingslashit(__DIR__) . 'Packages/Stack.php';
 		require_once trailingslashit(__DIR__) . 'Packages/Database.php';
 		require_once trailingslashit(__DIR__) . 'Packages/Request.php';
