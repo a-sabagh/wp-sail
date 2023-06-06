@@ -6,37 +6,47 @@ class Model {
 
 	public $id;
 	protected $data;
-
-	protected $have_map;
-	protected $have_stack;
-	protected $have_key;
+	protected $query_builder;
 
     public function __construct(array $data = array()){
         $this->set_data($data);
+		$this->query_builder = new QueryBuilder;
     }
+
+	public function query_builder(){
+		return new QueryBuilder;
+	}
 
     public function get_id(){
         return $this->id;
     }
 
+	public function set_id(int $id){
+		$this->id = $id;
+		return $this;
+	}
+
     public function set_data(array $data){
-        foreach($this->data as $key => $value){
-            $this->data[$key] = $data[$key] ?? $value;
-        }
-        return $this;
+		foreach($this->data as $key => $value){
+			$this->data[$key] = $data[$key] ?? $value;
+		}
+		return $this;
     }
 
     public function get_data($index=null){
-        return (isset($index))? $this->data[$index] : $this->data;
+		$prefix = strtolower(str_replace('\\','_',get_class($this)));
+		return (isset($index))? 
+			apply_filters("{$prefix}_{$index}_item_data",$this->data[$index]) :
+		   	apply_filters("{$prefix}_data",$this->data);
     }
 
-    public function save($id=null){
+    public function save(int $id=null){
         if(is_numeric($this->id)){
             $result = $this->update($this->id,$this->data);
-			return ($result)? $this : false;
+			return ($result)? $this->id : false;
         }else{
             $this->id = $this->create($this->data);
-			return $this;
+			return $this->id;
         }
     }
 
@@ -44,23 +54,8 @@ class Model {
         $this->delete($this->id);
     }
 
-	public function __call($resource,$args){
-		if($this->have_stack[$resource]){
-			return $this->have_stack[$resource];
-		}	
-		$class = $this->have_map[$resource];
-		if(!isset($class)){
-			return;
-		}
-		$object = new $class;
-		$foreign_key = $this->have_key[$resource];
-		$object->set_data([$foreign_key => $this->id]);
-		$this->have_stack[$resource] = $object;
-		return $object;
-	}
-
-    public function create($data){}
-    public function update($id,$data){}
-    public function delete($id){}
+    public function create(array $data=[]){}
+    public function update(int $id=null,array $data=[]){}
+    public function delete(int $id=null){}
 
 }

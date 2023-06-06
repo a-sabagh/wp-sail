@@ -2,7 +2,7 @@
 
 namespace WOAP\Tables;
 
-class MessagesTable {
+class Messages {
 
     public $wpdb;
 

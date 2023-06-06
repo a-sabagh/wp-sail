@@ -40,16 +40,34 @@ class QueryBuilder {
 		return $this;
 	}
 
-	public function join($table_name,$condition=[]){
-		$table = $this->prefix . $table_name;
-		$condition = array_map(function($element){ return(strpos($element,'.'))? $this->prefix . $element : $element; },$condition);
-		$this->join[]=[$table,$condition];
+	public function right_join($table_name,$condition=[]){
+		$this->join($table_name,$condition,'right');
 		return $this;
 	}
 
-	public function where($first_operand,$operator,$second_operand){
+	public function left_join($table_name,$condition=[]){
+		$this->join($table_name,$condition,'left');
+		return $this;
+	}
+
+	public function join($table_name,$condition,$type){
+		$type = strtoupper($type) ?: 'INNER';
+		$table = $this->prefix . $table_name;
+		$condition = array_map(function($element){ return(strpos($element,'.'))? $this->prefix . $element : $element; },$condition);
+		$this->join[]=[$table,$condition,$type];
+		return $this;
+	}
+
+	public function where($first_operand,$operator,$second_operand,$type=''){
+		$type = strtoupper($type);
 		$second_operand = ('integer' != gettype($second_operand))? "'{$second_operand}'" : $second_operand;
-		$this->where[] = [$first_operand,$operator,$second_operand];
+		$first_operand = (strpos($first_operand,'.'))? $this->prefix . $first_operand : $first_operand;
+		$this->where[] = [$first_operand,$operator,$second_operand,$type];
+		return $this;
+	}
+
+	public function or_where($first_operand,$operator,$second_operand){
+		$this->where($first_operand,$operator,$second_operand,'or');
 		return $this;
 	}
 
@@ -94,7 +112,8 @@ class QueryBuilder {
 				$condition = next($join);
 				$operand1 = current($condition);
 				$operand2 = next($condition);
-				$query .= "INNER JOIN {$table} ON {$operand1} = {$operand2} ";
+				$type = next($join);
+				$query .= "{$type}  JOIN {$table} ON {$operand1} = {$operand2} ";
 			}
 		}
 		$this->prepare_where_logic($query);
@@ -116,7 +135,8 @@ class QueryBuilder {
 		$table = $this->table;
 		$query = "UPDATE {$table} SET ";
 		$data = array_map(function ($key,$value){
-			return "{$key}={$value}";
+			$value_finalized = ('integer' != gettype($value))? "'{$value}'" : $value;
+			return "{$key}={$value_finalized}";
 		},array_keys($data),$data);
 		$update_data_query = implode(',',$data);
 		$query .= "{$update_data_query} ";
@@ -144,7 +164,9 @@ class QueryBuilder {
 		$condition_count = 0;
 		if(!empty($this->where)){
 			foreach($this->where as $condition){
-				$logic = ($condition_count > 0)? "AND " : "WHERE ";
+				$type = end($condition);
+				if(0 == $condition_count) $logic = "WHERE "; else $logic = ('OR' == strtoupper($type))? "OR " : "AND ";
+				reset($condition);
 				$operand1 = current($condition);
 				$operator = next($condition); 
 				$operand2 = next($condition);

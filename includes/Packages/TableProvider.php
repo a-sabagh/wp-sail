@@ -1,6 +1,6 @@
 <?php 
 
-namespace WOAP\Providers;
+namespace WOAP\Packages;
 
 class TableProvider {
     

@@ -1,12 +1,12 @@
 <?php
 
 /*
- * Plugin Name: Plugin Boilerplate
- * Description: Plugin boilerplate with api router
- * Version: 1.0
+ * Plugin Name: woocommerce plugin boilerplate
+ * Description: description
+ * Version: 5.1.0
  * Author: Abolfazl Sabagh
  * Author URI: http://asabagh.ir
- * Text Domain: WOAP
+ * Text Domain: wore
  */
 
 if (!defined('ABSPATH')) {
@@ -21,5 +21,6 @@ define("WOAP_PDP", plugin_dir_path(__FILE__));
 define("WOAP_TMP", WOAP_PDP . "public/");
 define("WOAP_ADM", WOAP_PDP . "admin/");
 
-require_once trailingslashit(__DIR__) . "includes/Init.php";
-$init = new WOAP\Init(1.0, 'woap-plugin', 'WOAPApi');
+require_once trailingslashit(__DIR__) . "includes/helpers.php";
+require_once trailingslashit(__DIR__) . "includes/Activation.php";
+add_action('woocommerce_loaded','woocommerce_application_init',100);
