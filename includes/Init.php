@@ -50,7 +50,6 @@ class Init {
 			trailingslashit(__DIR__) . 'Packages/Date.php',
 			trailingslashit(__DIR__) . 'Packages/Session.php',
 			trailingslashit(__DIR__) . 'Packages/PDF.php',
-			trailingslashit(__DIR__) . 'Repositories/User.php',
 		];
 		foreach(apply_filters('wore_modules',$modules) as $module){
 			require_once $module;
@@ -77,21 +76,18 @@ class Init {
 	public function boot_services(){
 		require_once trailingslashit(__DIR__) . 'Packages/ServiceContainer.php';
 		$services = [
-			/*Controllers\Logic\OrderLogic::class => trailingslashit(__DIR__) . 'Controllers/Logic/OrderLogic.php',*/
+			#services here
 		];
 		return new ServiceContainer(
 			apply_filters('wore_services',$services)
 		);
 	}
-
+	
 	public function route_init($service_container=null){
 		require_once trailingslashit(__DIR__) . 'Packages/Router.php';
 		$serviec_container = $service_container ?: $this->service_container;	
 		$route_mapping = [
-			/*'WOAPApi' => [
-				'namespace' => 'WOAP\Controllers\Api',
-				'type' => 'api',
-			],*/	
+			#register Rotes
 		];
 		$this->router = new Router($service_container,$route_mapping);
 	}

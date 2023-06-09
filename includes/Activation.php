@@ -12,7 +12,7 @@ class Activation {
 
     public function boot_tables_provider(){
 		$tables = array(
-			Tables\Messages::class => trailingslashit(__DIR__) . "Tables/Messages.php",
+			#tables here
 		);
         require_once trailingslashit(__DIR__) . "Packages/TableProvider.php";
         new TableProvider($tables);
