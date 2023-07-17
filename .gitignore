@@ -1,0 +1,10 @@
+node_modules/*
+package-lock.json
+.sass-cache/
+.idea/
+.vscode/
+*.sw*
+*.map
+rtl-light-vertical/*
+**/composer/vendor/*
+**/composer/composer.lock
