@@ -45,3 +45,12 @@ function woap_nested_access($data,...$keys){
 	}
 	return $data;
 }
+
+function wore_repository(){
+    global $wore_repository;
+    $repository = WPLS\Packages\Repository::class;
+    if(false == $wore_repository instanceof $repository){
+        $wore_repository = new $repository;
+    }
+    return $wore_repository;
+}
