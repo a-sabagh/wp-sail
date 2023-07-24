@@ -54,3 +54,8 @@ function wore_repository(){
     }
     return $wore_repository;
 }
+
+function wore_get_request_uri(string $endpoint=null,string $module=null,string $action=null,array $query_args=[]){
+	$request_url = trailingslashit(home_url("{$endpoint}/{$module}/{$action}"));
+	return add_query_arg($query_args,$request_url);
+}
