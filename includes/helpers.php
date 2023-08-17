@@ -59,3 +59,16 @@ function wore_get_request_uri(string $endpoint=null,string $module=null,string $
 	$request_url = trailingslashit(home_url("{$endpoint}/{$module}/{$action}"));
 	return add_query_arg($query_args,$request_url);
 }
+
+function wore_nested_access($data,...$keys){
+	if(!isset($data) || empty($keys)){
+		return;
+	}
+	foreach($keys as $key){
+		if(!isset($data[$key])){
+			return;
+		}
+		$data = $data[$key];
+	}
+	return $data;
+}
