@@ -22,7 +22,7 @@ class Init {
         $this->version = $version;
         $this->web_slug = $web_slug;
         $this->api_slug = $api_slug;
-		add_action('plugins_loaded', array($this, 'add_text_domain'));
+	add_action('init', array($this, 'add_text_domain'));
         add_action("admin_notices", array($this, "first_flush_notice"));
         add_action("update_option_permalink_structure", function() {
             update_option(self::first_flush_option, true);
