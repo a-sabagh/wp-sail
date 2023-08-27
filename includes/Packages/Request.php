@@ -254,7 +254,11 @@ class Request {
 	}
 
 	public function sanitize_explode_eol($value){
-		return explode(PHP_EOL,$value);
+		$data = explode(PHP_EOL,$value);
+		foreach($data as &$item){
+		    $item = str_replace(array('.', ' ', "\n", "\t", "\r"), '', $item);
+		}
+		return $data;
 	}
 
 }
