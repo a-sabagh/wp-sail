@@ -8,3 +8,4 @@ package-lock.json
 rtl-light-vertical/*
 **/composer/vendor/*
 **/composer/composer.lock
+*.mo
