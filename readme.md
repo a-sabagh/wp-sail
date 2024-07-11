@@ -11,5 +11,5 @@ find . -type f -iname '*.php' -not -path './includes/Packages/composer/*' -exec 
 ```
 Then change directory to composer path and install necessary libraries with composer
 ```console
-cd includes/Packages/composer/ && composer install 
+cd includes/Packages/composer/ && composer install && cd -
 ```
