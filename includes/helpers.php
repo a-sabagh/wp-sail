@@ -1,13 +1,13 @@
 <?php
 
 function woocommerce_application_init(){
-	global $wc_reserve_hotel_init;
-	if($wc_reserve_hotel_init instanceof WOAP\Init){
+	global $woocommerce_application_init;
+	if($woocommerce_application_init instanceof WOAP\Init){
 		return;
 	}
 	require_once trailingslashit(__DIR__) . "Init.php";
-	$wc_reserve_hotel_init = new WOAP\Init(1.0, 'woap', 'WOAPApi');
-	do_action('woocommerce_application_loaded',$wc_reserve_hotel_init);
+	$woocommerce_application_init = new WOAP\Init(1.0, 'woap', 'WOAPApi');
+	do_action('woocommerce_application_loaded',$woocommerce_application_init);
 }
 
 function woap_create_nonce(string $endpoint,string $module,string $action){
