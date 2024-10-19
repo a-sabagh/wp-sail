@@ -46,7 +46,7 @@ function woap_nested_access($data,...$keys){
 	return $data;
 }
 
-function wore_repository(){
+function woap_repository(){
     global $wore_repository;
     $repository = WPLS\Packages\Repository::class;
     if(false == $wore_repository instanceof $repository){
@@ -55,7 +55,7 @@ function wore_repository(){
     return $wore_repository;
 }
 
-function wore_get_request_uri(string $endpoint=null,string $module=null,string $action=null,array $query_args=[]){
+function woap_get_request_uri(string $endpoint=null,string $module=null,string $action=null,array $query_args=[]){
 	$request_url = trailingslashit(home_url("{$endpoint}/{$module}/{$action}"));
 	return add_query_arg($query_args,$request_url);
 }
