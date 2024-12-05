@@ -1,18 +1,18 @@
-First you need to replace namespace and text domain with it's new value using find and sed prompt together 
+ First you need to replace namespace and text domain with it's new value using find and sed prompt together 
 At root of plugin boilerplate run this prompts :
 ```console
-find . -type f -iname '*.php' -not -path './includes/Packages/composer/*' -exec sed -i 's/WOAP/#NAMESPACE/g' {} \;
+find . -type f -iname '*.php' -not -path './includes/Requirements/vendor/*' -exec sed -i 's/SAIL/#NAMESPACE/g' {} \;
 ```
 ```console
-find . -type f -iname '*.php' -not -path './includes/Packages/composer/*' -exec sed -i 's/woap/#TEXTDOMAIN/g' {} \;
+find . -type f -iname '*.php' -not -path './includes/Requirements/vendor/*' -exec sed -i 's/sail/#TEXTDOMAIN/g' {} \;
 ```
 ```console
-find . -type f -iname '*.php' -not -path './includes/Packages/composer/*' -exec sed -i 's/woocommerce_application/#PLUGINNAME/g' {} \;
+find . -type f -iname '*.php' -not -path './includes/Requirements/vendor/*' -exec sed -i 's/wp_sail_plugin/#PLUGINNAME/g' {} \;
 ```
 ```console
-find . -type f -iname '*.php' -not -path './includes/Packages/composer/*' -exec sed -i 's/woocommerce_application_init/#GLOBAL/g' {} \;
+find . -type f -iname '*.php' -not -path './includes/Requirements/vendor/*' -exec sed -i 's/wp_sail_plugin_init/#GLOBAL/g' {} \;
 ```
 Then change directory to composer path and install necessary libraries with composer
 ```console
-cd includes/Packages/composer/ && composer install && cd -
+cd includes/Requirements/ && composer install && cd -
 ```

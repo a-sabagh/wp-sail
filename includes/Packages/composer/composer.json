@@ -1,5 +1,0 @@
-{
-    "require": {
-        "salesforce/handlebars-php": "^2.3"
-    }
-}

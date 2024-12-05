@@ -1,8 +1,8 @@
 <?php 
 
-namespace WOAP;
+namespace SAIL;
 
-use WOAP\Packages\TableProvider;
+use SAIL\Packages\Providers\TableProvider;
 
 class Activation {
 
@@ -11,10 +11,8 @@ class Activation {
 	}
 
     public function boot_tables_provider(){
-		$tables = array(
-			#tables here
-		);
-        require_once trailingslashit(__DIR__) . "Packages/TableProvider.php";
+		$tables = [];
+        require_once trailingslashit(__DIR__) . "Packages/Providers/TableProvider.php";
         new TableProvider($tables);
     }
 }

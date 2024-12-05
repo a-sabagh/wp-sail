@@ -1,10 +1,9 @@
 <?php
 
-namespace WOAP;
+namespace SAIL;
 
-use WOAP\Packages\ServiceContainer;
-use WOAP\Packages\ApiProvider;
-use WOAP\Packages\Router;
+use SAIL\Packages\Providers\RouterProvider;
+use SAIL\Packages\Singleton\ServiceContainer;
 
 defined('ABSPATH') || exit;
 
@@ -22,36 +21,47 @@ class Init {
         $this->version = $version;
         $this->web_slug = $web_slug;
         $this->api_slug = $api_slug;
-	add_action('init', array($this, 'add_text_domain'));
+		add_action('plugins_loaded', array($this, 'add_text_domain'));
         add_action("admin_notices", array($this, "first_flush_notice"));
         add_action("update_option_permalink_structure", function() {
             update_option(self::first_flush_option, true);
         });
 		$this->boot_modules();
-		$this->service_container = $this->boot_services();
-		$this->route_init($this->service_container);
+		add_action('woocommerce_loaded',[$this,'boot_services'],90);
+		add_action('sail_route_init',[$this,'route_init']);
 	}
 
     public function add_text_domain() {
-        load_plugin_textdomain($this->web_slug, FALSE, WOAP_PRT . "/languages");
+        load_plugin_textdomain($this->web_slug, FALSE, SAIL_PRT . "/languages");
     }
 
     public function boot_modules() {
 		$modules = [
-			trailingslashit(__DIR__) . 'Packages/LastException.php',
-			trailingslashit(__DIR__) . 'Packages/RechargableProduct.php',
-			trailingslashit(__DIR__) . 'Packages/QueryBuilder.php',
-			trailingslashit(__DIR__) . 'Packages/Repository.php',
-			trailingslashit(__DIR__) . 'Packages/Auth.php',
-			trailingslashit(__DIR__) . 'Packages/Request.php',
-			trailingslashit(__DIR__) . 'Packages/Model.php',
-			trailingslashit(__DIR__) . 'Packages/Controller.php',
-			trailingslashit(__DIR__) . 'Packages/JDF.php',
-			trailingslashit(__DIR__) . 'Packages/Date.php',
-			trailingslashit(__DIR__) . 'Packages/Session.php',
-			trailingslashit(__DIR__) . 'Packages/PDF.php',
+            trailingslashit(__DIR__) . 'Requirements/vendor/autoload.php',
+			trailingslashit(__DIR__) . 'Packages/Database/QueryBuilder.php',
+            trailingslashit(__DIR__) . 'Packages/Database/Model.php',
+			trailingslashit(__DIR__) . 'Packages/Singleton/ServiceContainer.php',
+            trailingslashit(__DIR__) . 'Packages/Singleton/Repository.php',
+			trailingslashit(__DIR__) . 'Packages/Providers/RouterProvider.php',
+			trailingslashit(__DIR__) . 'Packages/Http/Validator.php',
+			trailingslashit(__DIR__) . 'Packages/Http/Request.php',
+			trailingslashit(__DIR__) . 'Packages/Http/RedirectResponse.php',
+			trailingslashit(__DIR__) . 'Packages/Http/Session.php',
+			trailingslashit(__DIR__) . 'Packages/Contracts/Controller.php',
+			trailingslashit(__DIR__) . 'Packages/Contracts/Component.php',
+			trailingslashit(__DIR__) . 'Packages/Utils/LastException.php',
+			trailingslashit(__DIR__) . 'Packages/Utils/RechargableProduct.php',
+			trailingslashit(__DIR__) . 'Packages/Utils/MessageBag.php',
+            trailingslashit(__DIR__) . 'Packages/Utils/JDF.php',
+			trailingslashit(__DIR__) . 'Packages/Utils/Date.php',
+			trailingslashit(__DIR__) . 'Packages/Utils/Arr.php',
+			trailingslashit(__DIR__) . 'Packages/Utils/PDF.php',
+			trailingslashit(__DIR__) . 'Traits/Setting.php',
+			trailingslashit(__DIR__) . 'Traits/Timestamp.php',
+			trailingslashit(__DIR__) . 'Traits/Post.php',
+			trailingslashit(__DIR__) . 'Traits/Term.php',
 		];
-		foreach(apply_filters('wore_modules',$modules) as $module){
+		foreach(apply_filters('sail_modules',$modules) as $module){
 			require_once $module;
 		}	
     }
@@ -64,7 +74,7 @@ class Init {
         ?>
         <div class="error">
             <p>
-                <?php esc_html_e("To make the api-boilerplate plugin worked Please first "); ?>
+                <?php esc_html_e("To make the wp sail plugin boilerplate worked right, Please first "); ?>
                 <a href="<?php echo get_admin_url(); ?>/options-permalink.php" title="<?php esc_attr_e("Permalink Settings") ?>" >
                     <?php esc_html_e("Flush rewrite rules"); ?>
                 </a>
@@ -74,22 +84,16 @@ class Init {
     }
 
 	public function boot_services(){
-		require_once trailingslashit(__DIR__) . 'Packages/ServiceContainer.php';
 		$services = [
-			#services here
+			Services\Logic\AttachmentLogic::class => trailingslashit(__DIR__) . 'Services/Logic/AttachmentLogic.php',
 		];
-		return new ServiceContainer(
-			apply_filters('wore_services',$services)
-		);
+		$this->service_container = new ServiceContainer(apply_filters('sail_services',$services));
+		do_action('sail_route_init',$this->service_container);c
 	}
-	
-	public function route_init($service_container=null){
-		require_once trailingslashit(__DIR__) . 'Packages/Router.php';
+
+	public function route_init($service_container){
 		$serviec_container = $service_container ?: $this->service_container;	
-		$route_mapping = [
-			#register Rotes
-		];
-		$this->router = new Router($service_container,$route_mapping);
+		$this->router = new RouterProvider($service_container,[]);
 	}
 
 }

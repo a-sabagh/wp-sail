@@ -1,26 +1,27 @@
 <?php
 
 /*
- * Plugin Name: woocommerce plugin boilerplate
- * Description: description
- * Version: 5.1.0
+ * Plugin Name: woocommerce reserve Development
+ * Description: booking hotel and trip deployed on woocommerce core and extensions
+ * Version: 5.5.0
  * Author: Abolfazl Sabagh
  * Author URI: http://asabagh.ir
- * Text Domain: wore
+ * Text Domain: sail
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-define("WOAP_FILE", __FILE__);
-define("WOAP_PRU", plugin_basename(__FILE__));
-define("WOAP_PDU", plugin_dir_url(__FILE__));
-define("WOAP_PRT", basename(__DIR__));
-define("WOAP_PDP", plugin_dir_path(__FILE__));
-define("WOAP_TMP", WOAP_PDP . "public/");
-define("WOAP_ADM", WOAP_PDP . "admin/");
-
+define("SAIL_PRU", plugin_basename(__FILE__));
+define("SAIL_PDU", plugin_dir_url(__FILE__));
+define("SAIL_PRT", basename(__DIR__));
+define("SAIL_PDP", plugin_dir_path(__FILE__));
+define("SAIL_TMP", SAIL_PDP . "resources/views/public/");
+define("SAIL_ADM", SAIL_PDP . "resources/views/admin/");
+define("SAIL_FILE", __FILE__);
+define("SAIL_VIEW", trailingslashit(plugin_dir_path(__FILE__)) . 'resources/views');
+define("SAIL_VIEW_URI", trailingslashit(plugin_dir_url(__FILE__)) . 'resources/views');
 require_once trailingslashit(__DIR__) . "includes/helpers.php";
 require_once trailingslashit(__DIR__) . "includes/Activation.php";
-add_action('woocommerce_loaded','woocommerce_application_init',100);
+add_action('woocommerce_loaded','wp_sail_plugin_init',10);
