@@ -1,6 +1,8 @@
 <?php 
 
-namespace SAIL\Packages;
+namespace SAIL\Packages\Providers;
+
+use LoggerWP\Exception\LogerException;
 
 class TableProvider {
     
@@ -23,8 +25,7 @@ class TableProvider {
 			foreach($table_services as $service){
 				$service->up();
 			}
-
-		}catch (\Exception $e){
+		}catch (LogerException $e){
 			wp_die($e->get_error_message());
 		}
     }

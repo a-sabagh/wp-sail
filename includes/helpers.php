@@ -1,8 +1,8 @@
 <?php
 
 use SAIL\Init;
-use SAIL\Packages\Request;
-use SAIL\Packages\Repository;
+use SAIL\Packages\Http\Request;
+use SAIL\Packages\Singleton\Repository;
 
 function wp_sail_plugin_init(){
 	global $wc_reserve_hotel_init;

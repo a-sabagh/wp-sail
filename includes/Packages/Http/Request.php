@@ -1,6 +1,6 @@
 <?php
 
-namespace SAIL\Packages;
+namespace SAIL\Packages\Http;
 
 class Request {
 

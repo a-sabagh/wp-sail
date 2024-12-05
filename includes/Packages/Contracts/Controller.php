@@ -2,7 +2,9 @@
 
 namespace SAIL\Packages\Contracts;
 
+use LoggerWp\Logger;
 use Handlebars\Handlebars;
+use SAIL\Packages\Http\Request;
 
 class Controller {
 
@@ -10,16 +12,18 @@ class Controller {
 	public $request;
 	public $repository;
 	public $handlebars;
-
-	private $process_log;
-	private $process_id = 0;
-	private $error_code = 0;
+	public $logger;
 
 	public function __construct($service_container){
 		$this->initialize_handlebars();
 		$this->repository = sail_repository();
 		$this->service_container = $service_container;		
 		$this->request = sail_repository()->get(Request::class);
+		$this->logger = new Logger([
+			'dir_name'  => 'sail-logs',
+			'channel'   => 'plugin',
+			'logs_days'  => 30,
+		]);
 		add_action("sail_http_request",[$this,'package_http_post_handler']);
 	}
 

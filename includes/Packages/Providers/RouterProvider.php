@@ -1,6 +1,6 @@
 <?php
 
-namespace SAIL\Packages\Http;
+namespace SAIL\Packages\Providers;
 
 use Exception;
 

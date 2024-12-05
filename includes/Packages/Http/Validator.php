@@ -3,20 +3,21 @@
 namespace SAIL\Packages\Http;
 
 use Exception;
+use SAIL\Packages\Utils\MessageBag;
 
 class Validator {
 
     /**
      * validator request instance
      *
-     * @var SAIL\Packages\Request
+     * @var SAIL\Packages\Http\Request
      */
 	protected $request;
 
     /**
      * message bag instance
      *
-     * @var SAIL\Packages\Message
+     * @var SAIL\Packages\Utils\MessageBag
      */
 	protected $errors;
 

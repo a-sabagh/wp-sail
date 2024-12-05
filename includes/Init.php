@@ -5,6 +5,7 @@ namespace SAIL;
 use SAIL\Packages\Providers\RouterProvider;
 use SAIL\Packages\Singleton\ServiceContainer;
 
+
 defined('ABSPATH') || exit;
 
 class Init {
@@ -27,8 +28,8 @@ class Init {
             update_option(self::first_flush_option, true);
         });
 		$this->boot_modules();
-		add_action('woocommerce_loaded',[$this,'boot_services'],90);
-		add_action('sail_route_init',[$this,'route_init']);
+		add_action('init', [$this,'boot_services']);
+		add_action('sail_route_init', [$this,'route_init']);
 	}
 
     public function add_text_domain() {
@@ -60,6 +61,8 @@ class Init {
 			trailingslashit(__DIR__) . 'Traits/Timestamp.php',
 			trailingslashit(__DIR__) . 'Traits/Post.php',
 			trailingslashit(__DIR__) . 'Traits/Term.php',
+			trailingslashit(__DIR__) . 'Models/Session.php',
+			trailingslashit(__DIR__) . 'Resources/SessionResource.php',
 		];
 		foreach(apply_filters('sail_modules',$modules) as $module){
 			require_once $module;
@@ -86,14 +89,20 @@ class Init {
 	public function boot_services(){
 		$services = [
 			Services\Logic\AttachmentLogic::class => trailingslashit(__DIR__) . 'Services/Logic/AttachmentLogic.php',
+			Services\Controller\Api\CryptoCompaire::class => trailingslashit(__DIR__) . 'Services/Controller/Api/CryptoCompaire.php',
 		];
 		$this->service_container = new ServiceContainer(apply_filters('sail_services',$services));
-		do_action('sail_route_init',$this->service_container);c
+		do_action('sail_route_init',$this->service_container);
 	}
 
 	public function route_init($service_container){
 		$serviec_container = $service_container ?: $this->service_container;	
-		$this->router = new RouterProvider($service_container,[]);
+		$this->router = new RouterProvider($service_container, [
+			'SAILApi' => [
+				'namespace' => 'SAIL\Services\Controller\Api',
+				'type' => 'api',
+			]
+		]);
 	}
 
 }

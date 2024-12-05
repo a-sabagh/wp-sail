@@ -3,6 +3,7 @@
 namespace SAIL\Packages\Http;
 
 use SAIL\Resources\SessionResource;
+use SAIL\Packages\Utils\Arr;
 
 class Session {
 

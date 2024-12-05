@@ -7,13 +7,13 @@ use SAIL\Packages\Providers\TableProvider;
 class Activation {
 
 	public function __construct(){
-		$this->boot_tables_provider();
+		$this->boot_table_provider();
 	}
 
-    public function boot_tables_provider(){
-		$tables = [];
-        require_once trailingslashit(__DIR__) . "Packages/Providers/TableProvider.php";
-        new TableProvider($tables);
+    public function boot_table_provider(){
+		new TableProvider([
+            Tables\Session::class => trailingslashit(__DIR__) . "Tables/Session.php",
+		]);
     }
 }
 

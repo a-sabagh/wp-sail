@@ -2,8 +2,6 @@
 
 namespace SAIL\Packages\Singleton;
 
-defined('ABSPATH') || exit;
-
 class ServiceContainer {
 
     public $modules;
