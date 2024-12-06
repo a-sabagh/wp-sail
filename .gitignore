@@ -6,6 +6,6 @@ package-lock.json
 *.sw*
 *.map
 rtl-light-vertical/*
-**/composer/vendor/*
-**/composer/composer.lock
+**/Requirements/vendor/*
+**/Requirements/composer.lock
 *.mo
