@@ -2,7 +2,7 @@
 
 namespace SAIL;
 
-use SAIL\Packages\Providers\RouterProvider;
+use SAIL\Packages\Providers\RoutProvider;
 use SAIL\Packages\Singleton\ServiceContainer;
 
 
@@ -43,7 +43,7 @@ class Init {
             trailingslashit(__DIR__) . 'Packages/Database/Model.php',
 			trailingslashit(__DIR__) . 'Packages/Singleton/ServiceContainer.php',
             trailingslashit(__DIR__) . 'Packages/Singleton/Repository.php',
-			trailingslashit(__DIR__) . 'Packages/Providers/RouterProvider.php',
+			trailingslashit(__DIR__) . 'Packages/Providers/RoutProvider.php',
 			trailingslashit(__DIR__) . 'Packages/Http/Validator.php',
 			trailingslashit(__DIR__) . 'Packages/Http/Request.php',
 			trailingslashit(__DIR__) . 'Packages/Http/RedirectResponse.php',
@@ -92,12 +92,12 @@ class Init {
 			Services\Controller\Api\CryptoCompaire::class => trailingslashit(__DIR__) . 'Services/Controller/Api/CryptoCompaire.php',
 		];
 		$this->service_container = new ServiceContainer(apply_filters('sail_services',$services));
-		do_action('sail_route_init',$this->service_container);
+		do_action('sail_route_init', $this->service_container);
 	}
 
 	public function route_init($service_container){
-		$serviec_container = $service_container ?: $this->service_container;	
-		$this->router = new RouterProvider($service_container, [
+		$serviec_container = $service_container ?: $this->service_container;
+		$this->router = new RoutProvider($service_container, [
 			'SAILApi' => [
 				'namespace' => 'SAIL\Services\Controller\Api',
 				'type' => 'api',
