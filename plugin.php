@@ -23,7 +23,11 @@ define("SAIL_FILE", __FILE__);
 define("SAIL_VIEW", trailingslashit(plugin_dir_path(__FILE__)) . 'resources/views');
 define("SAIL_VIEW_URI", trailingslashit(plugin_dir_url(__FILE__)) . 'resources/views');
 
+require_once trailingslashit(__DIR__) . "includes/Init.php";
 require_once trailingslashit(__DIR__) . "includes/helpers.php";
 require_once trailingslashit(__DIR__) . "includes/Packages/Providers/TableProvider.php";
 require_once trailingslashit(__DIR__) . "includes/Activation.php";
-add_action('plugins_loaded', 'wp_sail_plugin_init');
+
+global $wc_reserve_hotel_init;
+$wc_reserve_hotel_init = new SAIL\Init(1.0, 'SAIL', 'SAILApi');
+do_action('wp_sail_loded',$wc_reserve_hotel_init);

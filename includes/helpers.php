@@ -4,16 +4,6 @@ use SAIL\Init;
 use SAIL\Packages\Http\Request;
 use SAIL\Packages\Singleton\Repository;
 
-function wp_sail_plugin_init(){
-	global $wc_reserve_hotel_init;
-	if($wc_reserve_hotel_init instanceof Init){
-		return;
-	}
-	require_once trailingslashit(__DIR__) . "Init.php";
-	$wc_reserve_hotel_init = new Init(1.0, 'SAIL', 'SAILApi');
-	do_action('woocommerce_reserve_loded',$wc_reserve_hotel_init);
-}
-
 function sail_service_container(){
 	global $wc_reserve_hotel_init;
 	if(false == $wc_reserve_hotel_init instanceof Init){
