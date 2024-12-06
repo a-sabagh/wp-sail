@@ -2,7 +2,7 @@
 
 namespace SAIL\Packages\Contracts;
 
-use Exception;
+use LoggerWp\Exception\LogerException;
 
 class Component extends Controller {
 
@@ -28,7 +28,7 @@ class Component extends Controller {
 	public function template_exception_handling(){
 		$component_path = $this->get_response_view($this->endpoint,$this->path);
 		if( !file_exists($component_path) ){
-			throw new Exception(
+			throw new LogerException(
 				sprintf(
 					__('component %s template combination configuration invalid: %s', 'SAIL'),
 					__CLASS__,
@@ -41,7 +41,7 @@ class Component extends Controller {
 	public function configuration_exception_handling(){
 		foreach($this->configuration as $key => $value){
 			if( 0 == strlen($value) ){
-				throw new Exception(
+				throw new LogerException(
 					sprintf(
 						__('configuration %s invalid! because of empty value for %s key', 'SAIL'),
 						__CLASS__,

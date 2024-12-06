@@ -2,12 +2,13 @@
 
 use SAIL\Init;
 use SAIL\Packages\Http\Request;
+use LoggerWp\Exception\LogerException;
 use SAIL\Packages\Singleton\Repository;
 
 function sail_service_container(){
 	global $wc_reserve_hotel_init;
 	if(false == $wc_reserve_hotel_init instanceof Init){
-		throw new Exception(__('Service Container Error','SAIL'));
+		throw new LogerException(__('Service Container Error','SAIL'));
 	}
 	return $wc_reserve_hotel_init->service_container;
 }

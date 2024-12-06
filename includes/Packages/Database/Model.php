@@ -2,8 +2,6 @@
 
 namespace SAIL\Packages\Database;
 
-use Exception;
-
 class Model {
 
 	public $id;

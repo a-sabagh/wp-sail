@@ -2,9 +2,9 @@
 
 namespace SAIL\Packages\Providers;
 
-use Exception;
+use LoggerWp\Exception\LogerException;
 
-class RouterProvider {
+class RoutProvider {
 
 	public $service_container;
 	public $route_mapping;
@@ -14,7 +14,7 @@ class RouterProvider {
 		$this->service_container = $service_container;
 		$this->route_mapping = $route_mapping;
 		$this->request_rule_arr = $request_rule_arr;
-        add_action("init", array($this, "add_rewrite_rule"));
+		$this->add_rewrite_rule();
 		add_action('template_redirect', [$this,'route_init']);
 	}
 
@@ -64,10 +64,11 @@ class RouterProvider {
 			do_action("sail_http_request_{$endpoint_tolower}_{$module_tolower}");
 			do_action("sail_http_request_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}");
 			$namespace_class = "{$namespace}\\{$module}";
-			$object = $this->service_container->get($namespace_class);
+			$service = $this->service_container->get($namespace_class);
+			$service->logger->setChannel($endpoint_tolower);
 			$method_name = $route_type . "_response_body";
-			if(!is_object($object) || !method_exists($object,$action)){
-				throw new Exception(
+			if(!is_object($service) || !method_exists($service,$action)){
+				throw new LogerException(
 					sprintf(
 						__("Woocommerce Reserve invalid routing combination %s/%s/%s","SAIL"),
 						$endpoint,$module,$action
@@ -76,8 +77,8 @@ class RouterProvider {
 				);
 			}
 			do_action('sail_request_start',$action,$request_params);
-			$this->$method_name($object,$action,$request_params);
-		}catch(Exception $exception){
+			$this->$method_name($service,$action,$request_params);
+		}catch(LogerException $exception){
 			do_action('sail_exception_handling',$exception);
 			$method_name = $route_type . "_error_handling";
 			$this->$method_name($exception);
@@ -88,13 +89,13 @@ class RouterProvider {
 		exit;
 	}
 
-	public function web_error_handling(Exception $exception){
+	public function web_error_handling(LogerException $exception){
 		do_action('sail_exception_handling',$exception);
 		$error_message = $exception->getMessage();
 		wp_die($error_message);
 	}
 
-	public function content_error_handling(Exception $exception){
+	public function content_error_handling(LogerException $exception){
 		do_action('sail_exception_handling',$exception);
 		$error_message = $exception->getMessage();
 		add_filter('the_content',function($content) use ($error_message){
@@ -102,7 +103,7 @@ class RouterProvider {
 		});
 	}
 
-	public function api_error_handling(Exception $exception){
+	public function api_error_handling(LogerException $exception){
 		do_action('sail_exception_handling',$exception);
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
@@ -122,29 +123,29 @@ class RouterProvider {
 		);		
 	}
 
-	public function api_response_body($object,$action,$param){
+	public function api_response_body($service,$action,$param){
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
-		$result = $object->$action($param);
+		$result = $service->$action($param);
 		$code = isset($result['code'])? $result['code'] : 200;
 		echo json_encode($result);
 	}
 
-	public function web_response_body($object,$action,$param){
-		if(!is_object($object) || !method_exists($object,$action)){
+	public function web_response_body($service,$action,$param){
+		if(!is_object($service) || !method_exists($service,$action)){
 			http_response_code(404);
 			die('404 Not Found');
 		}
 		ob_start();
-		$object->$action($param);
+		$service->$action($param);
 		$output = apply_filters('sail_route_web_response_body',ob_get_clean());
 		echo $output;
 	}
 
-	public function content_response_body($object,$action,$param){
-		do_action("sail_content_routing_start",$object,$action,$param);
-		$output = $object->$action();
-		add_filter('the_content',function($content) use ($output){
+	public function content_response_body($service,$action,$param){
+		do_action("sail_content_routing_start",$service,$action,$param);
+		$output = $service->$action();
+		add_filter('the_content', function($content) use ($output){
 			return apply_filters('sail_content_response_body',$output);	
 		});
 	}

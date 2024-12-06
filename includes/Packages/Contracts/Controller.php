@@ -3,6 +3,7 @@
 namespace SAIL\Packages\Contracts;
 
 use LoggerWp\Logger;
+use SAIL\Activation;
 use Handlebars\Handlebars;
 use SAIL\Packages\Http\Request;
 
@@ -20,8 +21,8 @@ class Controller {
 		$this->service_container = $service_container;		
 		$this->request = sail_repository()->get(Request::class);
 		$this->logger = new Logger([
-			'dir_name'  => 'sail-logs',
-			'channel'   => 'plugin',
+			'dir_name'  => Activation::upload_directory,
+			'channel'   => 'default',
 			'logs_days'  => 30,
 		]);
 		add_action("sail_http_request",[$this,'package_http_post_handler']);

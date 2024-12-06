@@ -2,8 +2,8 @@
 
 namespace SAIL\Packages\Http;
 
-use Exception;
 use SAIL\Packages\Utils\MessageBag;
+use LoggerWp\Exception\LogerException;
 
 class Validator {
 
@@ -51,11 +51,11 @@ class Validator {
 		foreach($validations as $validation){
 			$rule = $validation['rule'];
 			if( empty($rule) ){
-				throw new Exception( __('validation rule is not set','SAIL') );
+				throw new LogerException( __('validation rule is not set','SAIL') );
 			}
 			$method = "check_{$rule}";
 			if( !method_exists($this,$method) ){
-				throw new Exception( sprintf( __('invalid validation rule %s','SAIL'), $rule ) );
+				throw new LogerException( sprintf( __('invalid validation rule %s','SAIL'), $rule ) );
 			}
 			$this->$method($validation);
 		}
