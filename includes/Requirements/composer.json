@@ -1,9 +1,0 @@
-{
-    "require": {
-        "phpoffice/phpspreadsheet": "^1.23",
-        "salesforce/handlebars-php": "3.0.1",
-        "tecnickcom/tcpdf": "^6.5",
-        "veronalabs/logger-wp": "^1.1",
-        "guzzlehttp/guzzle": "6.5"
-    }
-}
