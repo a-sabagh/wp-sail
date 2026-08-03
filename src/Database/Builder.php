@@ -71,6 +71,7 @@ class Builder
     public function table($table)
     {
         $this->table = $this->prefix . $table;
+
         return $this;
     }
 
@@ -82,6 +83,7 @@ class Builder
     public function distinct()
     {
         $this->distinct = true;
+
         return $this;
     }
 
@@ -99,6 +101,7 @@ class Builder
             },
             func_get_args(),
         );
+
         return $this;
     }
 
@@ -112,6 +115,7 @@ class Builder
     public function right_join($table_name, $condition = [])
     {
         $this->join($table_name, $condition, 'right');
+
         return $this;
     }
 
@@ -125,6 +129,7 @@ class Builder
     public function left_join($table_name, $condition = [])
     {
         $this->join($table_name, $condition, 'left');
+
         return $this;
     }
 
@@ -140,13 +145,16 @@ class Builder
     {
         $type = strtoupper($type) ?: 'INNER';
         $table = $this->prefix . $table_name;
+
         $condition = array_map(
             function ($element) {
                 return($this->alias_regex($element)) ? $this->prefix . $element : $element;
             },
             $condition,
         );
+
         $this->join[] = [$table,$condition,$type];
+
         return $this;
     }
 
@@ -161,6 +169,7 @@ class Builder
     public function where_between($column, $begin, $end)
     {
         $this->where_between[] = [$column,$begin,$end];
+
         return $this;
     }
 
@@ -178,7 +187,9 @@ class Builder
         $type = strtoupper($type);
         $second_operand = ('integer' != gettype($second_operand)) ? "'{$second_operand}'" : $second_operand;
         $first_operand = ($this->alias_regex($first_operand)) ? $this->prefix . $first_operand : $first_operand;
+
         $this->where[] = [$first_operand,$operator,$second_operand,$type];
+
         return $this;
     }
 
@@ -193,6 +204,7 @@ class Builder
     public function or_where($first_operand, $operator, $second_operand)
     {
         $this->where($first_operand, $operator, $second_operand, 'or');
+
         return $this;
     }
 
@@ -208,7 +220,9 @@ class Builder
         $values = array_map(function ($element) {
             return ('integer' != gettype($element)) ? "'{$element}'" : $element;
         }, $range);
+
         $this->where_in[] = [$column,$values];
+
         return $this;
     }
 
@@ -222,6 +236,7 @@ class Builder
     public function order_by($order_by, $order)
     {
         $this->order_by[] = func_get_args();
+
         return $this;
     }
 
@@ -234,6 +249,7 @@ class Builder
     public function order_by_desc($order_by)
     {
         $this->order_by[] = [$order_by,'desc'];
+
         return $this;
     }
 
@@ -246,6 +262,7 @@ class Builder
     public function group_by($group_column)
     {
         $this->group_by = $group_column;
+
         return $this;
     }
 
@@ -258,6 +275,7 @@ class Builder
     public function offset($offset)
     {
         $this->offset = $offset;
+
         return $this;
     }
 
@@ -270,6 +288,7 @@ class Builder
     public function limit($limit)
     {
         $this->limit = $limit;
+
         return $this;
     }
 
@@ -297,6 +316,7 @@ class Builder
         $columns = implode(',', $this->column);
         $distinct = $this->distinct ? 'DISTINCT' : '';
         $query = "SELECT {$distinct} {$columns} FROM {$table} ";
+
         if (!empty($this->join)) {
             foreach ($this->join as $join) {
                 $table = current($join);
@@ -307,20 +327,26 @@ class Builder
                 $query .= "{$type}  JOIN {$table} ON {$operand1} = {$operand2} ";
             }
         }
+
         $this->prepare_where_logic($query);
+
         $group_by = $this->group_by;
         $query .= (!empty($group_by)) ? "GROUP BY {$group_by} " : "";
+
         if (!empty($this->order_by)) {
             $order_by = implode(",", array_map(function ($element) {
                 return implode(' ', $element);
             }, $this->order_by));
             $query .= "ORDER BY {$order_by} ";
         }
+
         $limit = (int) $this->limit;
         $query .= ($limit > 0) ? "LIMIT {$limit} " : "";
         $offset = (int) $this->offset;
         $query .= ($limit > 0) ? "OFFSET {$offset} " : "";
+
         $this->query = $query;
+
         return $this->wpdb->get_results($query, ARRAY_A);
     }
 
@@ -342,6 +368,7 @@ class Builder
     public function first()
     {
         $result = $this->limit(1)->get();
+
         return !empty($result) ? current($result) : false;
     }
 
@@ -366,7 +393,9 @@ class Builder
     public function update($data)
     {
         $table = $this->table;
+
         $query = "UPDATE {$table} SET ";
+
         $data = array_map(function ($key, $value) {
             if (is_null($value)) {
                 $value_finalized = 'NULL';
@@ -375,10 +404,13 @@ class Builder
             }
             return "{$key}={$value_finalized}";
         }, array_keys($data), $data);
+
         $update_data_query = implode(',', $data);
         $query .= "{$update_data_query} ";
+
         $this->prepare_where_logic($query);
         $this->query = $query;
+
         return $this->wpdb->query($query);
     }
 
@@ -391,8 +423,10 @@ class Builder
     {
         $table = $this->table;
         $query = "DELETE FROM {$table} ";
+
         $this->prepare_where_logic($query);
         $this->query = $query;
+
         return $this->wpdb->query($query);
     }
 
@@ -405,6 +439,7 @@ class Builder
     public function insert($data)
     {
         $this->wpdb->insert($this->table, $data);
+
         return $this->wpdb->insert_id;
     }
 
@@ -428,7 +463,9 @@ class Builder
     {
         $table = $this->table;
         $query = "TRUNCATE TABLE {$table}";
+
         $this->query = $query;
+
         return $this->wpdb->query($query);
     }
 
@@ -441,6 +478,7 @@ class Builder
     public function statement($sql)
     {
         $this->query = $sql;
+
         return $this->wpdb->query($sql);
     }
 
@@ -458,6 +496,7 @@ class Builder
     private function prepare_where_logic(&$query)
     {
         $condition_count = 0;
+
         if (!empty($this->where)) {
             foreach ($this->where as $condition) {
                 $type = end($condition);
@@ -474,6 +513,7 @@ class Builder
                 $condition_count++;
             }
         }
+
         if (!empty($this->where_in)) {
             foreach ($this->where_in as $condition) {
                 $logic = ($condition_count > 0) ? "AND " : "WHERE ";
@@ -483,6 +523,7 @@ class Builder
                 $condition_count++;
             }
         }
+
         if (!empty($this->where_between)) {
             foreach ($this->where_between as [$column,$begin,$end]) {
                 $logic = ($condition_count > 0) ? "AND " : "WHERE ";
@@ -504,8 +545,9 @@ class Builder
     public function alias_regex(string $query_string)
     {
         $query_string_tolower = strtolower($query_string);
-        return strpos('.',$query_string_tolower)
-            && !strpos('as',$query_string_tolower);
+
+        return strpos('.', $query_string_tolower)
+            && !strpos('as', $query_string_tolower);
     }
 
 }
