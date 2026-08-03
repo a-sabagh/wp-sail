@@ -2,6 +2,7 @@
 
 namespace WPSail\Database;
 
+use wpdb;
 use Aimeos\Macro\Macroable;
 use BadMethodCallException;
 
@@ -9,25 +10,22 @@ class Builder
 {
     use Macroable;
 
-    private $wpdb;
-    private $table;
-    private $distinct;
-    private $column = [ '*' ];
-    private $join = [];
-    private $where = [];
-    private $where_in = [];
-    private $where_between = [];
-    private $order_by = [];
-    private $group_by;
-    private $offset;
-    private $limit;
+    private wpdb $wpdb;
+    private ?string $table = null;
+    private bool $distinct = false;
+    private array $column = [ '*' ];
+    private array $join = [];
+    private array $where = [];
+    private array $where_in = [];
+    private array $where_between = [];
+    private array $order_by = [];
+    private ?string $group_by = null;
+    private ?int $offset = null;
+    private ?int $limit = null;
 
-    public $query;
-    public $prefix;
+    public ?string $query = null;
+    public string $prefix;
 
-    /**
-     * Initialize the QueryBuilder with the global WordPress database object.
-     */
     public function __construct()
     {
         global $wpdb;
