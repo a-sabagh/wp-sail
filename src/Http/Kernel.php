@@ -161,6 +161,7 @@ class Kernel
      *
      * @throws RouteNotFoundException If the controller or action cannot be resolved.
      *
+     * @see \WPSail\Tests\Http\KernelDependencyInjectionTest
      * @see \WPSail\Tests\Http\KernelResponseTest
      */
     protected function resolve_controller(string $namespace, string $endpoint, string $controller, string $action): object

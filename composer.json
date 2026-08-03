@@ -5,6 +5,11 @@
             "WPSail\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "WPSail\\Workbench\\": "workbench/"
+        }
+    },
     "authors": [
         {
             "name": "a-sabagh",
