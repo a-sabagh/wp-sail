@@ -1,11 +1,11 @@
-<?php 
+<?php
 
 namespace WPSail\Utility;
 
 use Aimeos\Macro\Macroable;
 
-class Arr {
-
+class Arr
+{
     use Macroable;
 
     /**
@@ -15,20 +15,22 @@ class Arr {
      * @param  array|string|int|float  $keys
      * @return array
      */
-    public static function except($array, $keys){
+    public static function except($array, $keys)
+    {
         static::forget($array, $keys);
 
         return $array;
     }
 
-	/**
+    /**
      * Get a subset of the items from the given array.
      *
      * @param  array  $array
      * @param  array|string  $keys
      * @return array
      */
-    public static function only($array, $keys){
+    public static function only($array, $keys)
+    {
         return array_intersect_key($array, array_flip((array) $keys));
     }
 
@@ -38,7 +40,8 @@ class Arr {
      * @param  mixed  $value
      * @return bool
      */
-    public static function accessible($value){
+    public static function accessible($value)
+    {
         return is_array($value);
     }
 
@@ -49,7 +52,8 @@ class Arr {
      * @param  string|int|float  $key
      * @return bool
      */
-    public static function exists($array, $key){
+    public static function exists($array, $key)
+    {
         if (is_float($key)) {
             $key = (string) $key;
         }
@@ -63,7 +67,8 @@ class Arr {
      * @param  mixed  $value
      * @return void
      */
-    public static function set(&$array, $key, $value){
+    public static function set(&$array, $key, $value)
+    {
         if (is_null($key)) {
             return $array = $value;
         }
@@ -90,7 +95,8 @@ class Arr {
      * @param  mixed  $default
      * @return mixed
      */
-    public static function get($array, $key, $default = null){
+    public static function get($array, $key, $default = null)
+    {
         if (! static::accessible($array)) {
             return $default;
         }
@@ -121,7 +127,8 @@ class Arr {
      * @param  mixed  $value
      * @return array
      */
-    public static function add($array, $key, $value){
+    public static function add($array, $key, $value)
+    {
         if (is_null(static::get($array, $key))) {
             static::set($array, $key, $value);
         }
@@ -136,20 +143,22 @@ class Arr {
      * @param  mixed  $default
      * @return mixed
      */
-    public static function pull(&$array, $key, $default = null){
+    public static function pull(&$array, $key, $default = null)
+    {
         $value = static::get($array, $key, $default);
         static::forget($array, $key);
         return $value;
     }
 
-   /**
-     * Remove one or many array items from a given array using "dot" notation.
-     *
-     * @param  array  $array
-     * @param  array|string|int|float  $keys
-     * @return void
-     */
-    public static function forget(&$array, $keys){
+    /**
+      * Remove one or many array items from a given array using "dot" notation.
+      *
+      * @param  array  $array
+      * @param  array|string|int|float  $keys
+      * @return void
+      */
+    public static function forget(&$array, $keys)
+    {
         $original = &$array;
         $keys = (array) $keys;
         if (count($keys) === 0) {
@@ -180,7 +189,8 @@ class Arr {
      * @param  array  $array
      * @return string
      */
-    public static function query($array){
+    public static function query($array)
+    {
         return http_build_query($array, '', '&', PHP_QUERY_RFC3986);
     }
 

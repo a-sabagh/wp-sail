@@ -4,8 +4,8 @@ namespace WPSail\Utility;
 
 use Aimeos\Macro\Macroable;
 
-class Str {
-
+class Str
+{
     use Macroable;
 
     /**
@@ -14,7 +14,8 @@ class Str {
      * @param  string  $value
      * @return string
      */
-    public static function lower($value) {
+    public static function lower($value)
+    {
         return mb_strtolower($value, 'UTF-8');
     }
 
@@ -25,8 +26,9 @@ class Str {
      * @param  string  $delimiter
      * @return string
      */
-    public static function snake($value, $delimiter = '_') {
-        return static::lower(preg_replace('/(.)(?=[A-Z])/u', '$1'.$delimiter, $value));
+    public static function snake($value, $delimiter = '_')
+    {
+        return static::lower(preg_replace('/(.)(?=[A-Z])/u', '$1' . $delimiter, $value));
     }
 
 }
