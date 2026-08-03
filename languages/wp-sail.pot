@@ -1,0 +1,25 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Sail plugin boilerplate 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-02 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: wp-sail\n"
+
+#. Plugin Name of the plugin
+msgid "WP Sail plugin boilerplate"
+msgstr ""
+
+#. translators: %s: Method name.
+#: src/Database/Builder.php
+#, php-format
+msgid "Method %s does not exist."
+msgstr ""
+
+#. translators: 1: Sanitizer type. 2: Sanitizer class name.
+#: src/Utility/Sanitize.php
+#, php-format
+msgid "sanitize type %1$s is undefined on %2$s"
+msgstr ""
