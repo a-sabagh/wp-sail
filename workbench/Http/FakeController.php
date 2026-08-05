@@ -2,6 +2,7 @@
 
 namespace WPSail\Workbench\Http;
 
+use WPSail\Http\Request;
 use WPSail\Http\Response\JsonResponse;
 use WPSail\Workbench\Services\FakeService;
 
@@ -11,10 +12,13 @@ final class FakeController
         public readonly FakeService $service,
     ) {}
 
-    public function show(array $parameters): JsonResponse
+    /**
+     * @see \WPSail\Tests\Http\KernelDependencyInjectionTest
+     */
+    public function show(Request $request): JsonResponse
     {
         return new JsonResponse(
-            $this->service->retrieve($parameters['id'] ?? 'missing'),
+            $this->service->retrieve($request->query->get('id', 'missing')),
         );
     }
 }

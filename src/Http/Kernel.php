@@ -2,7 +2,7 @@
 
 namespace WPSail\Http;
 
-use Psr\Container\ContainerInterface;
+use DI\Container;
 use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -21,7 +21,7 @@ class Kernel
      * @see \WPSail\Tests\Http\KernelResponseTest
      */
     public function __construct(
-        protected ContainerInterface $container,
+        protected Container $container,
     ) {
         $this->add_rewrite_rule();
 
@@ -45,8 +45,8 @@ class Kernel
 
     /**
      * Register route rewrite rules and query variables with WordPress.
-     * Link structure must be define as /{endpoint}/{controller}/{action}/{params}.
-     * Query variables: `wpsail_class`, `wpsail_action`, `wpsail_params`, and `wpsail_endpoint`.
+     * Link structure must be define as /{endpoint}/{controller}/{action}.
+     * Query variables: `wpsail_class`, `wpsail_action`, and `wpsail_endpoint`.
      *
      * @return void
      *
@@ -56,14 +56,13 @@ class Kernel
     {
         foreach ($this->get_map() as $slug => $data) {
             add_rewrite_rule(
-                "^{$slug}/([^/]*)/?([^/]*)/?([^/]*)/?$",
-                'index.php?wpsail_class=$matches[1]&wpsail_action=$matches[2]&wpsail_params=$matches[3]&wpsail_endpoint=' . $slug,
+                "^{$slug}/([^/]*)/?([^/]*)/?$",
+                'index.php?wpsail_class=$matches[1]&wpsail_action=$matches[2]&wpsail_endpoint=' . $slug,
                 "top",
             );
 
             add_rewrite_tag("%wpsail_class%", "([^/]*)");
             add_rewrite_tag("%wpsail_action%", "([^/]*)");
-            add_rewrite_tag("%wpsail_params%", "([^/]*)");
             add_rewrite_tag("%wpsail_endpoint%", "([^/]*)");
         }
     }
@@ -71,8 +70,8 @@ class Kernel
     /**
      * Resolve and dispatch the current routed WordPress request.
      *
-     * After resolving the endpoint, controller, action, and request parameters,
-     * the following hooks run in lifecycle with the following pattern
+     * After resolving the endpoint, controller, and action, the following hooks
+     * run in lifecycle with the following pattern
      * wpsail_{hook}_{endpoint}_{controller}_{action}
      *
      * @return void
@@ -92,21 +91,27 @@ class Kernel
             return;
         }
 
-        global $module,$action,$route_expression,$request_params;
+        global $module,$action,$route_expression;
 
         $map = $this->get_map();
 
         $module = get_query_var("wpsail_class");
         $action = get_query_var("wpsail_action") ?: 'index';
-        $params = get_query_var("wpsail_params");
 
         $endpoint_tolower = strtolower($endpoint);
         $module_tolower = strtolower($module);
         $action_tolower = strtolower($action);
 
-        parse_str($params, $request_params);
-
         $route_expression = "{$endpoint_tolower}/{$module_tolower}/{$action_tolower}";
+
+        $request = Request::capture();
+
+        $request->attributes->set('_endpoint', $endpoint);
+        $request->attributes->set('_controller', $module);
+        $request->attributes->set('_action', $action);
+        $request->attributes->set('_route', $route_expression);
+
+        $this->container->set(Request::class, $request);
 
         try {
             if (!isset($map[$endpoint])) {
@@ -124,21 +129,21 @@ class Kernel
                 );
             }
 
-            do_action("wpsail_route_init", $endpoint, $module, $action);
-            do_action("wpsail_authentication_{$endpoint_tolower}");
-            do_action("wpsail_authentication_{$endpoint_tolower}_{$module_tolower}");
-            do_action("wpsail_authentication_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}");
+            do_action("wpsail_route_init", $endpoint, $module, $action, $request);
+            do_action("wpsail_authentication_{$endpoint_tolower}", $request);
+            do_action("wpsail_authentication_{$endpoint_tolower}_{$module_tolower}", $request);
+            do_action("wpsail_authentication_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}", $request);
 
-            do_action("wpsail_http_request");
-            do_action("wpsail_http_request_{$endpoint_tolower}");
-            do_action("wpsail_http_request_{$endpoint_tolower}_{$module_tolower}");
-            do_action("wpsail_http_request_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}");
+            do_action("wpsail_http_request", $request);
+            do_action("wpsail_http_request_{$endpoint_tolower}", $request);
+            do_action("wpsail_http_request_{$endpoint_tolower}_{$module_tolower}", $request);
+            do_action("wpsail_http_request_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}", $request);
 
             $object = $this->resolve_controller($namespace, $endpoint, $module, $action);
 
-            do_action('wpsail_request_start', $action, $request_params);
+            do_action('wpsail_request_start', $action, $request);
 
-            $response = $this->dispatch_response($object, $action, $request_params);
+            $response = $this->dispatch_response($object, $action, $request);
 
             $this->send_response($response);
 
@@ -184,9 +189,9 @@ class Kernel
     /**
      * Invoke a controller action and validate its response.
      *
-     * @param object               $object     The resolved controller instance.
-     * @param string               $action     The controller action name.
-     * @param array<string, mixed> $parameters The routed request parameters.
+     * @param object  $object  The resolved controller instance.
+     * @param string  $action  The controller action name.
+     * @param Request $request The current HTTP request.
      *
      * @return Response
      *
@@ -194,9 +199,11 @@ class Kernel
      *
      * @see \WPSail\Tests\Http\KernelResponseTest
      */
-    protected function dispatch_response(object $object, string $action, array $parameters): Response
+    protected function dispatch_response(object $object, string $action, Request $request): Response
     {
-        $response = $object->$action($parameters);
+        $this->container->set(Request::class, $request);
+
+        $response = $this->container->call([$object, $action]);
 
         if (!$response instanceof Response) {
             throw new UnexpectedValueException(

@@ -6,6 +6,7 @@ use DI\Container;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 use WPSail\Http\Kernel;
+use WPSail\Http\Request;
 use WPSail\Http\Response\JsonResponse;
 use WPSail\Workbench\Http\FakeController;
 use WPSail\Workbench\Services\FakeRepository;
@@ -45,12 +46,36 @@ final class KernelDependencyInjectionTest extends TestCase
         $this->assertSame($this->container->get(FakeService::class), $controller->service);
         $this->assertSame($this->container->get(FakeRepository::class), $controller->service->repository);
 
-        $response = $this->kernel->dispatch($controller, 'show', ['id' => 'service-1']);
+        $request = new Request(['id' => 'service-1']);
+        $response = $this->kernel->dispatch($controller, 'show', $request);
 
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertSame(
             [
                 'id' => 'service-1',
+                'source' => 'fake-repository',
+            ],
+            json_decode($response->getContent(), true),
+        );
+    }
+
+    public function test_kernel_injects_request_and_service_into_an_action(): void
+    {
+        $controller = new class {
+            public function show(Request $request, FakeService $service): JsonResponse
+            {
+                return new JsonResponse(
+                    $service->retrieve($request->query->get('id', 'missing')),
+                );
+            }
+        };
+
+        $request = new Request(['id' => 'action-1']);
+        $response = $this->kernel->dispatch($controller, 'show', $request);
+
+        $this->assertSame(
+            [
+                'id' => 'action-1',
                 'source' => 'fake-repository',
             ],
             json_decode($response->getContent(), true),
@@ -65,8 +90,8 @@ final class DependencyInjectionKernel extends Kernel
         return $this->resolve_controller($namespace, $endpoint, $controller, $action);
     }
 
-    public function dispatch(object $controller, string $action, array $parameters): Response
+    public function dispatch(object $controller, string $action, Request $request): Response
     {
-        return $this->dispatch_response($controller, $action, $parameters);
+        return $this->dispatch_response($controller, $action, $request);
     }
 }

@@ -2,11 +2,12 @@
 
 namespace WPSail\Tests\Http;
 
+use DI\Container;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use UnexpectedValueException;
 use WPSail\Http\Kernel;
+use WPSail\Http\Request;
 use WPSail\Http\Response\JsonResponse;
 
 final class KernelResponseTest extends TestCase
@@ -17,19 +18,7 @@ final class KernelResponseTest extends TestCase
     {
         parent::setUp();
 
-        $container = new class implements ContainerInterface {
-            public function get(string $id): mixed
-            {
-                throw new UnexpectedValueException($id);
-            }
-
-            public function has(string $id): bool
-            {
-                return false;
-            }
-        };
-
-        $this->kernel = new TestKernel($container);
+        $this->kernel = new TestKernel(new Container());
     }
 
     protected function tearDown(): void
@@ -47,19 +36,19 @@ final class KernelResponseTest extends TestCase
         $controller = new class ($expected) {
             public function __construct(private Response $response) {}
 
-            public function index(array $parameters): Response
+            public function index(): Response
             {
                 return $this->response;
             }
         };
 
-        $this->assertSame($expected, $this->kernel->dispatch($controller, 'index', []));
+        $this->assertSame($expected, $this->kernel->dispatch($controller, 'index', new Request()));
     }
 
     public function test_controller_must_return_an_http_foundation_response(): void
     {
         $controller = new class {
-            public function index(array $parameters): array
+            public function index(): array
             {
                 return ['ok' => true];
             }
@@ -70,7 +59,7 @@ final class KernelResponseTest extends TestCase
             'must return Symfony\Component\HttpFoundation\Response; array returned.',
         );
 
-        $this->kernel->dispatch($controller, 'index', []);
+        $this->kernel->dispatch($controller, 'index', new Request());
     }
 
     public function test_kernel_registers_a_wordpress_shutdown_callback(): void
@@ -103,8 +92,8 @@ final class KernelResponseTest extends TestCase
 
 final class TestKernel extends Kernel
 {
-    public function dispatch(object $controller, string $action, array $parameters): Response
+    public function dispatch(object $controller, string $action, Request $request): Response
     {
-        return $this->dispatch_response($controller, $action, $parameters);
+        return $this->dispatch_response($controller, $action, $request);
     }
 }
