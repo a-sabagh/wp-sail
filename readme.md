@@ -1,8 +1,17 @@
 # WP Sail
 
+## Index
+
+- [Controller requests](#controller-requests)
+- [Flash data after a redirect](#flash-data-after-a-redirect)
+- [Controller responses](#controller-responses)
+  - [Redirect responses](#redirect-responses)
+  - [JSON responses](#json-responses)
+  - [View responses](#view-responses)
+
 ## Controller requests
 
-WP Sail captures the current HTTP request and injects it into controller actions through PHP-DI. Type-hint `WPSail\Http\Request` on the action; controllers do not need to read PHP superglobals directly.
+WP Sail captures the current HTTP request and injects it into controller actions through [PHP-DI](https://github.com/PHP-DI/PHP-DI). Type-hint `WPSail\Http\Request` on the action; controllers do not need to read PHP superglobals directly.
 
 ```php
 <?php
@@ -115,12 +124,33 @@ $old = $flash->get('wpsail.old_input');
 
 ## Controller responses
 
-Every routed controller action must return a Symfony HttpFoundation response object. WP Sail provides two response classes built on `symfony/http-foundation`:
+Every routed controller action must return a Symfony HttpFoundation response object. Common response types are:
 
+- `Symfony\Component\HttpFoundation\RedirectResponse` for redirects.
 - `WPSail\Http\Response\JsonResponse` for JSON responses.
 - `WPSail\Http\Response\ViewResponse` for HTML responses.
 
 The returned response object determines how the kernel handles the result. Route definitions no longer need a `type` value. Returning a plain array, string, or other value is invalid and will be converted into an error response by the kernel.
+
+### Redirect responses
+
+Return Symfony's `RedirectResponse` to send the client to another URL:
+
+```php
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+public function store(): RedirectResponse
+{
+    // Save the submitted data.
+
+    return new RedirectResponse(
+        home_url('/products'),
+        RedirectResponse::HTTP_SEE_OTHER,
+    );
+}
+```
+
+The default status is `302 Found`. Use `303 See Other` after a successful form submission when the redirected request should use `GET`. Build redirects from trusted URLs; see [Flash data after a redirect](#flash-data-after-a-redirect) for carrying validation errors and old input.
 
 ### JSON responses
 

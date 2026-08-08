@@ -24,6 +24,7 @@ class Request extends SymfonyRequest
             return $request;
         }
 
+        // remove the slashes added by wordpress to the request url
         $request->query->replace(wp_unslash($request->query->all()));
         $request->request->replace(wp_unslash($request->request->all()));
         $request->cookies->replace(wp_unslash($request->cookies->all()));
