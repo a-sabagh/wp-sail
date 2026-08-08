@@ -70,6 +70,49 @@ public function show(Request $request, ProductRepository $products): JsonRespons
 }
 ```
 
+## Flash data after a redirect
+
+Routed requests have a lazy Symfony session. The session starts only when it is accessed, and flash data remains available for the next request only. This supports the usual POST/Redirect/GET flow without keeping validation state in query parameters.
+
+Store validation errors and the non-sensitive input before returning Symfony's `RedirectResponse`:
+
+```php
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use WPSail\Http\Request;
+use WPSail\Utility\Arr;
+
+public function update(Request $request): RedirectResponse
+{
+    $errors = [
+        'email' => [__('The email field is required.', 'acme-plugin')],
+    ];
+
+    $flash = $request->getSession()->getFlashBag();
+    $flash->set('wpsail.validation_errors', $errors);
+    $flash->set(
+        'wpsail.old_input',
+        Arr::except($request->request->all(), [
+            'password',
+            'password_confirmation',
+            '_wpnonce',
+        ]),
+    );
+
+    return new RedirectResponse(home_url('/account/profile'));
+}
+```
+
+Retrieve the data in the redirected GET action:
+
+```php
+$flash = $request->getSession()->getFlashBag();
+
+$errors = $flash->get('wpsail.validation_errors');
+$old = $flash->get('wpsail.old_input');
+```
+
+`get()` returns an empty array when the key is absent and consumes the stored value. Always exclude passwords, nonces, tokens, and other secrets from old input, and escape messages and values when rendering them.
+
 ## Controller responses
 
 Every routed controller action must return a Symfony HttpFoundation response object. WP Sail provides two response classes built on `symfony/http-foundation`:

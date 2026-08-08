@@ -5,6 +5,9 @@ namespace WPSail\Http;
 use DI\Container;
 use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\Flash\AutoExpireFlashBag;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Throwable;
 use UnexpectedValueException;
 use WPSail\Http\Exception\RouteNotFoundException;
@@ -111,6 +114,8 @@ class Kernel
         $request->attributes->set('_action', $action);
         $request->attributes->set('_route', $route_expression);
 
+        $this->attach_session($request);
+
         $this->container->set(Request::class, $request);
 
         try {
@@ -145,12 +150,60 @@ class Kernel
 
             $response = $this->dispatch_response($object, $action, $request);
 
-            $this->send_response($response);
-
         } catch (Throwable $exception) {
             do_action('wpsail_exception_handling', $exception);
 
-            $this->send_response($this->make_error_response($exception));
+            $response = $this->make_error_response($exception);
+        }
+
+        $this->save_session($request);
+
+        $this->send_response($response);
+    }
+
+    /**
+     * Make flash data available without starting a session until it is used.
+     *
+     * @param Request $request The current HTTP request.
+     *
+     * @return void
+     */
+    protected function attach_session(Request $request): void
+    {
+        $request->setSessionFactory(fn(): FlashBagAwareSessionInterface => $this->make_session());
+    }
+
+    /**
+     * Create a session that keeps WP Sail flash data isolated.
+     *
+     * @return FlashBagAwareSessionInterface
+     */
+    protected function make_session(): FlashBagAwareSessionInterface
+    {
+        return new Session(
+            flashes: new AutoExpireFlashBag('_wpsail_flashes'),
+        );
+    }
+
+    /**
+     * Persist an initialized session and release its lock before responding.
+     *
+     * @param Request $request The current HTTP request.
+     *
+     * @return void
+     */
+    protected function save_session(Request $request): void
+    {
+        // Avoid resolving and saving a lazy session that was never used.
+        if (!$request->hasSession(true)) {
+            return;
+        }
+
+        $session = $request->getSession();
+
+        // check whether PHP session storage is opened
+        if ($session->isStarted()) {
+            $session->save();
         }
     }
 

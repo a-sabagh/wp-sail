@@ -4,6 +4,7 @@ namespace WPSail\Http;
 
 use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 
 class Request extends SymfonyRequest
 {
@@ -31,5 +32,15 @@ class Request extends SymfonyRequest
         $request->headers = new HeaderBag($request->server->getHeaders());
 
         return $request;
+    }
+
+    /**
+     * Retrieve the session attached by the HTTP kernel.
+     *
+     * @return FlashBagAwareSessionInterface
+     */
+    public function getSession(): FlashBagAwareSessionInterface
+    {
+        return parent::getSession();
     }
 }

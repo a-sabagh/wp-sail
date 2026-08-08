@@ -88,6 +88,7 @@ final class KernelResponseTest extends TestCase
 
         $this->assertSame(1, $calls);
     }
+
 }
 
 final class TestKernel extends Kernel
