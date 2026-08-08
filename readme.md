@@ -1,13 +1,205 @@
 # WP Sail
 
+WP Sail is a lightweight application layer for building structured, modern
+WordPress plugins without fighting the platform beneath them. It brings
+controller routing, dependency-injected requests, expressive responses, session
+flash data, database utilities, and familiar helper APIs together in one focused
+foundation—so your plugin code can stay clear, testable, and distinctly
+WordPress-native.
+
+The plugin that uses WP Sail must declare it as a dependency in its main plugin
+file. Add the `Requires Plugins` header alongside the plugin's other headers:
+
+```php
+<?php
+
+/**
+ * Plugin Name: WooCommerce Payment MultiStox
+ * Description: Provides MultiStox payment functionality for WooCommerce.
+ * Version: 0.1.0
+ * Requires Plugins: wp-sail
+ */
+```
+
+Use the WP Sail plugin directory slug, `wp-sail`, rather than its display name.
+For multiple dependencies, provide a comma-separated list, for example
+`Requires Plugins: woocommerce, wp-sail`. WordPress uses this header to prevent
+the dependent plugin from being activated while WP Sail is missing or inactive.
+
 ## Index
 
+- [Database query builder](#database-query-builder)
+- [Custom route maps](#custom-route-maps)
+  - [Function callback](#function-callback)
+  - [Class method callback](#class-method-callback)
 - [Controller requests](#controller-requests)
 - [Flash data after a redirect](#flash-data-after-a-redirect)
 - [Controller responses](#controller-responses)
   - [Redirect responses](#redirect-responses)
   - [JSON responses](#json-responses)
   - [View responses](#view-responses)
+
+## Database query builder
+
+`WPSail\Database\Builder` provides a fluent interface over the global WordPress
+`wpdb` instance. Pass table names without the WordPress database prefix; `table()`
+and the join methods add the current site's prefix automatically.
+
+```php
+use WPSail\Database\Builder;
+
+$products = (new Builder())
+    ->table('products') // Queries wp_products when the prefix is wp_.
+    ->select('id', 'name', 'price')
+    ->where('status', '=', 'published')
+    ->where_between('price', 10, 100)
+    ->order_by_desc('id')
+    ->limit(20)
+    ->get();
+```
+
+`get()` and its `all()` alias return rows as associative arrays. Use `first()`
+to retrieve one row; it returns `false` when no row matches.
+
+### Building queries
+
+Builder methods are chainable until an execution method is called:
+
+| Method | Purpose |
+| --- | --- |
+| `table($table)` | Select a table and add the site's WordPress prefix. |
+| `select(...$columns)` | Set the selected columns. The default is `*`. |
+| `distinct()` | Add `DISTINCT` to a select query. |
+| `where($column, $operator, $value)` | Add a `WHERE` condition. Multiple calls are joined with `AND`. |
+| `or_where($column, $operator, $value)` | Add a condition joined with `OR`. |
+| `where_in($column, $values)` | Add a `WHERE IN` condition. |
+| `where_between($column, $start, $end)` | Add a `WHERE BETWEEN` condition. |
+| `left_join($table, $condition)` | Add a left join. The condition is a two-item array containing the columns to compare. |
+| `right_join($table, $condition)` | Add a right join. |
+| `join($table, $condition, $type)` | Add a join with an explicit type such as `INNER`. |
+| `group_by($column)` | Add a `GROUP BY` clause. |
+| `order_by($column, $direction)` | Add an `ORDER BY` clause. May be called more than once. |
+| `order_by_desc($column)` | Order a column in descending order. |
+| `limit($limit)` / `take($limit)` | Limit the number of returned rows. |
+| `offset($offset)` | Skip rows. The offset is applied when a positive limit is set. |
+
+For qualified join columns, use the builder's public `prefix` property so the
+query also works on sites with a non-default prefix:
+
+```php
+$query = (new Builder())->table('orders');
+$prefix = $query->prefix;
+
+$orders = $query
+    ->select("{$prefix}orders.id", "{$prefix}customers.email")
+    ->left_join('customers', [
+        "{$prefix}orders.customer_id",
+        "{$prefix}customers.id",
+    ])
+    ->get();
+```
+
+### Writing data
+
+Use an associative array for inserts and updates:
+
+```php
+$builder = (new Builder())->table('products');
+
+$product_id = $builder->insert([
+    'name' => 'Desk lamp',
+    'status' => 'draft',
+]);
+
+$affected = (new Builder())
+    ->table('products')
+    ->where('id', '=', $product_id)
+    ->update(['status' => 'published']);
+
+$deleted = (new Builder())
+    ->table('products')
+    ->where('id', '=', $product_id)
+    ->delete();
+```
+
+`insert()` returns the inserted ID. `update()`, `delete()`, `truncate()`, and
+`statement()` return the value produced by the corresponding `wpdb` operation.
+`truncate()` removes every row from the selected table, while `statement($sql)`
+executes a raw SQL statement. After a select, update, delete, truncate, or raw
+statement, the generated SQL is available in the builder's public `query`
+property for debugging.
+
+> **SQL safety:** Builder values, identifiers, operators, ordering, and raw
+> statements are interpolated into SQL; the class does not bind parameters or
+> call `wpdb::prepare()`. Do not pass request data or other untrusted input to
+> these methods. Use WordPress's prepared-query APIs when any part of a query is
+> dynamic.
+
+## Custom route maps
+
+Add controller namespaces to the HTTP Kernel with the
+`wpsail_route_collection` filter. Each array key is an endpoint and its
+`namespace` value is the namespace in which WP Sail resolves controllers.
+Register the filter before WordPress runs the `init` hook, because that is when
+WP Sail boots the kernel and creates its rewrite rules.
+
+The following map resolves a request such as
+`/WCMApi/Payment/capture` to the `capture()` method on
+`WCMultiStox\Http\Controllers\Api\Payment`:
+
+### Function callback
+
+Use a named function when the route registration does not belong to a class:
+
+```php
+add_filter('wpsail_route_collection', 'register_multistox_routes');
+
+function register_multistox_routes(array $routes): array
+{
+    $routes['WCMApi'] = [
+        'namespace' => 'WCMultiStox\\Http\\Controllers\\Api',
+    ];
+
+    return $routes;
+}
+```
+
+### Class method callback
+
+For an object-oriented plugin, register an instance method from the class that
+boots the integration:
+
+```php
+class MultiStoxPlugin
+{
+    public function __construct()
+    {
+        add_filter(
+            'wpsail_route_collection',
+            [$this, 'register_multistox_routes'],
+        );
+    }
+
+    public function register_multistox_routes(array $routes): array
+    {
+        $routes['WCMApi'] = [
+            'namespace' => 'WCMultiStox\\Http\\Controllers\\Api',
+        ];
+
+        return $routes;
+    }
+}
+
+new MultiStoxPlugin();
+```
+
+The route format is `/{endpoint}/{controller}/{action}`. If the action segment
+is omitted, WP Sail calls `index()`. Endpoint keys are case-sensitive when
+rewrite rules match the incoming URL, so use the same spelling in the map and
+request path. After adding or changing an endpoint, refresh **Settings →
+Permalinks** once (or call `flush_rewrite_rules()` during plugin activation) so
+WordPress stores the new rewrite rules. Do not flush rewrite rules on every
+request.
 
 ## Controller requests
 
