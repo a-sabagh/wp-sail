@@ -3,36 +3,65 @@
 namespace WPSail;
 
 use DI\Container;
-use WPSail\Http\Kernel as HTTPKernel;
+use InvalidArgumentException;
+use Psr\Container\ContainerInterface;
+use WPSail\Providers\HttpServiceProvider;
+use WPSail\Providers\TranslationServiceProvider;
+use WPSail\Support\ServiceProvider;
 
 class App
 {
-    public function __construct()
+    protected Container $container_instance;
+
+    public function __construct(?Container $container = null)
     {
-        add_action('init', [$this, 'load_textdomain']);
-        add_action('init', [$this, 'boot_http_kernel']);
+        $this->container_instance = $container ?? new Container();
+
+        $this->container_instance->set(self::class, $this);
+        $this->container_instance->set(Container::class, $this->container_instance);
+        $this->container_instance->set(ContainerInterface::class, $this->container_instance);
+
+        add_action('plugins_loaded', [$this, 'register_providers']);
     }
 
-    public function load_textdomain()
+    public function register_providers(): void
     {
-        load_plugin_textdomain('wp-sail', false, basename(dirname(__DIR__)) . '/languages');
-    }
+        /**
+         * Filter the service providers that make up the WP Sail application.
+         *
+         * @param array<int, class-string<ServiceProvider>> $providers
+         */
+        $providers = apply_filters('wpsail_service_providers', [
+            TranslationServiceProvider::class,
+            HttpServiceProvider::class,
+        ]);
 
-    /**
-     * Boot the HTTP kernel.
-     *
-     * @return void
-     */
-    public function boot_http_kernel()
-    {
-        global $http_kernel;
-
-        if (isset($http_kernel) && $http_kernel instanceof HTTPKernel) {
-            return;
+        if (!is_array($providers)) {
+            throw new InvalidArgumentException('The wpsail_service_providers filter must return an array.');
         }
 
-        $http_kernel = new HTTPKernel(
-            new Container(),
-        );
+        foreach ($providers as $provider) {
+            if (!is_string($provider) || !is_a($provider, ServiceProvider::class, true)) {
+                throw new InvalidArgumentException(
+                    sprintf(
+                        'Service provider [%s] must extend %s.',
+                        is_string($provider) ? $provider : get_debug_type($provider),
+                        ServiceProvider::class,
+                    ),
+                );
+            }
+
+            (new $provider($this))->register();
+        }
+    }
+
+    public function container(): Container
+    {
+        return $this->container_instance;
+    }
+
+    public function make(string $id): mixed
+    {
+        return $this->container_instance->get($id);
     }
 }

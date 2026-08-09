@@ -307,11 +307,14 @@ class Kernel
         }
 
         return new ViewResponse(
-            apply_filters(
-                'wpsail_route_view_response_body',
-                esc_html($exception->getMessage()),
-            ),
+            dirname(__DIR__, 2) . '/resources/views/error.php',
             $status,
+            data: [
+                'body' => apply_filters(
+                    'wpsail_route_view_response_body',
+                    esc_html($exception->getMessage()),
+                ),
+            ],
         );
     }
 
