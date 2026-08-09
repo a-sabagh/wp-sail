@@ -28,6 +28,10 @@ the dependent plugin from being activated while WP Sail is missing or inactive.
 
 ## Index
 
+- [Service providers](#service-providers)
+  - [Provider lifecycle](#provider-lifecycle)
+  - [Creating a provider](#creating-a-provider)
+  - [Registering a provider](#registering-a-provider)
 - [Database query builder](#database-query-builder)
 - [Custom route maps](#custom-route-maps)
   - [Function callback](#function-callback)
@@ -38,6 +42,95 @@ the dependent plugin from being activated while WP Sail is missing or inactive.
   - [Redirect responses](#redirect-responses)
   - [JSON responses](#json-responses)
   - [View responses](#view-responses)
+
+## Service providers
+
+Service providers are the central place for bootstrapping a plugin that depends
+on WP Sail. A provider can bind implementations into WP Sail's shared PHP-DI
+container and register WordPress hooks, filters, and routes. The HTTP kernel uses
+that same container when resolving controllers and their dependencies.
+
+WP Sail includes providers for translations and its HTTP kernel. Dependent
+plugins add their own providers through the `wpsail_service_providers` filter.
+
+### Provider lifecycle
+
+WP Sail uses a single provider phase. On WordPress's `plugins_loaded` action, the
+application creates each configured provider and calls its `register()` method.
+A provider uses that method to define container services and attach WordPress
+hooks or filters.
+
+Runtime work should remain deferred to WordPress callbacks such as `init` or
+`template_redirect`. Avoid resolving a service during provider registration when
+its dependencies might be supplied by another provider; resolve it inside the
+deferred callback instead. WP Sail's HTTP provider follows this rule by defining
+the kernel during registration and resolving it later on `init`.
+
+### Creating a provider
+
+Extend `WPSail\Support\ServiceProvider` and implement its `register()` method.
+The `container()` method returns the application-wide PHP-DI container.
+
+```php
+<?php
+
+namespace Acme\Providers;
+
+use Acme\Contracts\ProductRepository;
+use Acme\Repositories\WordPressProductRepository;
+use WPSail\Support\ServiceProvider;
+
+use function DI\factory;
+
+final class AcmeServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->container()->set(
+            ProductRepository::class,
+            factory(
+                fn(): ProductRepository => new WordPressProductRepository(),
+            ),
+        );
+
+        add_filter('wpsail_route_collection', [$this, 'register_routes']);
+    }
+
+    public function register_routes(array $routes): array
+    {
+        $routes['acme'] = [
+            'namespace' => 'Acme\\Http\\Controllers',
+        ];
+
+        return $routes;
+    }
+}
+```
+
+Providers also receive the `WPSail\App` instance through their constructor.
+Use `$this->app()` to access it, `$this->app()->make($id)` to resolve a service,
+or `$this->container()` to define bindings directly.
+
+### Registering a provider
+
+Add provider class names from the dependent plugin's main file. Register the
+filter while the plugin file is being loaded so it runs before `plugins_loaded`:
+
+```php
+use Acme\Providers\AcmeServiceProvider;
+
+add_filter(
+    'wpsail_service_providers',
+    static function (array $providers): array {
+        $providers[] = AcmeServiceProvider::class;
+
+        return $providers;
+    },
+);
+```
+
+The filter must return an array of provider class names. Each provider must
+extend `WPSail\Support\ServiceProvider`.
 
 ## Database query builder
 
@@ -386,7 +479,9 @@ Symfony serializes the data as JSON and validates the HTTP status code. WordPres
 
 ### View responses
 
-Return `ViewResponse` from actions that provide HTML. Escape dynamic values with the appropriate native WordPress escaping function:
+Return `ViewResponse` from actions that render a PHP template. Pass an absolute,
+trusted template path as the first argument and provide template variables with
+the named `data` argument:
 
 ```php
 <?php
@@ -401,24 +496,38 @@ class PageController
     public function show(Request $request): ViewResponse
     {
         $title = $request->query->get('title', __('Page', 'acme-plugin'));
-        $content = sprintf('<h1>%s</h1>', esc_html($title));
 
         return new ViewResponse(
-            $content,
+            ACME_PLUGIN_PATH . 'resources/views/page.php',
             ViewResponse::HTTP_OK,
+            data: ['title' => $title],
         );
     }
 }
 ```
 
-Custom response headers can be passed as the third constructor argument:
+The keys in `data` become variables in the template. Escape every dynamic value
+with the appropriate WordPress escaping function:
+
+```php
+<!-- resources/views/page.php -->
+<h1><?= esc_html($title); ?></h1>
+```
+
+Custom response headers remain the third constructor argument, while template
+data is the fourth:
 
 ```php
 return new ViewResponse(
-    $html,
+    ACME_PLUGIN_PATH . 'resources/views/page.php',
     ViewResponse::HTTP_OK,
     ['X-Frame-Options' => 'SAMEORIGIN'],
+    ['title' => $title],
 );
 ```
 
-`ViewResponse` uses `text/html` with the WordPress site charset. Both response classes inherit the standard HttpFoundation response API, including methods such as `headers->set()`, `setStatusCode()`, and `setContent()`.
+Do not construct the template path from request data. `ViewResponse` rejects
+paths that do not reference a readable file. It renders the file immediately
+and uses `text/html` with the WordPress site charset. Both response classes
+inherit the standard HttpFoundation response API, including methods such as
+`headers->set()`, `setStatusCode()`, and `setContent()`.
