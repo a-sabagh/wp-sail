@@ -43,20 +43,18 @@ class ViewResponse extends Response
             );
         }
 
-        $buffer_level = ob_get_level();
-
         ob_start();
 
         try {
+            // the `EXTR_SKIP` parameter prevent from overwriting variables
+            // that already exists in current scope
             extract($data, EXTR_SKIP);
 
             require $template;
 
             return (string) ob_get_clean();
         } catch (Throwable $exception) {
-            while (ob_get_level() > $buffer_level) {
-                ob_end_clean();
-            }
+            ob_end_clean();
 
             throw $exception;
         }
