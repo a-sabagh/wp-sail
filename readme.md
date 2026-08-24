@@ -7,6 +7,8 @@ flash data, database utilities, and familiar helper APIs together in one focused
 foundation—so your plugin code can stay clear, testable, and distinctly
 WordPress-native.
 
+WP Sail requires PHP 8.2 or later.
+
 The plugin that uses WP Sail must declare it as a dependency in its main plugin
 file. Add the `Requires Plugins` header alongside the plugin's other headers:
 

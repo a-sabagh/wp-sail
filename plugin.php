@@ -4,6 +4,7 @@
  * Plugin Name: WP Sail plugin boilerplate
  * Description: ⛵ wordpress plugin boilerplate for Api and Web with custom service provider
  * Version: 1.0.0
+ * Requires PHP: 8.2
  * Author: Abolfazl Sabagh
  * Author URI: http://asabagh.ir
  * Text Domain: wp-sail

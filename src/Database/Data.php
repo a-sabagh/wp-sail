@@ -8,7 +8,7 @@ abstract class Data
 
     protected array $data;
 
-    protected Builder $builder;
+    protected ?Builder $builder = null;
 
     /**
      * Initialize the data object from an array or identifier.
@@ -43,7 +43,11 @@ abstract class Data
      */
     public function query()
     {
-        return new Builder();
+        if (!$this->builder instanceof Builder) {
+            $this->builder = new Builder();
+        }
+
+        return $this->builder;
     }
 
     /**
