@@ -83,6 +83,19 @@ if (! function_exists('load_plugin_textdomain')) {
     }
 }
 
+if (! function_exists('home_url')) {
+    /**
+     * Retrieve the home URL with an optional relative path.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    function home_url($path = '')
+    {
+        return 'https://example.com/' . ltrim($path, '/');
+    }
+}
+
 require_once $wordpress_path . 'wp-includes/formatting.php';
 require_once __DIR__ . '/../src/functions.php';
 

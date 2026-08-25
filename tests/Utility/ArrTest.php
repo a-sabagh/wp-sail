@@ -79,6 +79,20 @@ final class ArrTest extends TestCase
         $this->assertSame('fallback', Arr::get('invalid', 'name', 'fallback'));
     }
 
+    public function test_data_get_delegates_to_arr_get(): void
+    {
+        $array = [
+            'name' => 'Sail',
+            'profile' => ['contact' => ['email' => 'sail@example.com']],
+        ];
+
+        $this->assertSame('Sail', data_get($array, 'name'));
+        $this->assertSame('sail@example.com', data_get($array, 'profile.contact.email'));
+        $this->assertSame('fallback', data_get($array, 'profile.phone', 'fallback'));
+        $this->assertSame($array, data_get($array, null));
+        $this->assertSame('fallback', data_get('invalid', 'name', 'fallback'));
+    }
+
     public function test_add_only_assigns_values_that_are_missing_or_null(): void
     {
         $array = ['name' => 'Sail', 'description' => null];

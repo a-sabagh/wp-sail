@@ -23,4 +23,6 @@ define("WPSAIL_FILE", __FILE__);
 
 require_once WPSAIL_PDP . 'vendor/autoload.php';
 
-new WPSail\App();
+global $wpsail;
+
+$wpsail = new WPSail\App();
