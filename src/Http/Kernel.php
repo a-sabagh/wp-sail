@@ -135,11 +135,7 @@ class Kernel
             }
 
             do_action("wpsail_route_init", $endpoint, $module, $action, $request);
-            do_action("wpsail_authentication_{$endpoint_tolower}", $request);
-            do_action("wpsail_authentication_{$endpoint_tolower}_{$module_tolower}", $request);
-            do_action("wpsail_authentication_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}", $request);
 
-            do_action("wpsail_http_request", $request);
             do_action("wpsail_http_request_{$endpoint_tolower}", $request);
             do_action("wpsail_http_request_{$endpoint_tolower}_{$module_tolower}", $request);
             do_action("wpsail_http_request_{$endpoint_tolower}_{$module_tolower}_{$action_tolower}", $request);
