@@ -38,6 +38,7 @@ the dependent plugin from being activated while WP Sail is missing or inactive.
 - [Custom route maps](#custom-route-maps)
   - [Function callback](#function-callback)
   - [Class method callback](#class-method-callback)
+  - [Route request hooks](#route-request-hooks)
 - [Controller requests](#controller-requests)
 - [Flash data after a redirect](#flash-data-after-a-redirect)
 - [Controller responses](#controller-responses)
@@ -295,6 +296,36 @@ request path. After adding or changing an endpoint, refresh **Settings →
 Permalinks** once (or call `flush_rewrite_rules()` during plugin activation) so
 WordPress stores the new rewrite rules. Do not flush rewrite rules on every
 request.
+
+### Route request hooks
+
+WP Sail dispatches endpoint-scoped request actions after `wpsail_route_init`
+and before resolving the controller. For a request to
+`/WCMApi/Payment/capture`, the actions run from broadest to most specific:
+
+```text
+wpsail_http_request_wcmapi
+wpsail_http_request_wcmapi_payment
+wpsail_http_request_wcmapi_payment_capture
+```
+
+The endpoint, controller, and action portions of these hook names are converted
+to lowercase. Each callback receives the current `WPSail\Http\Request`:
+
+```php
+use WPSail\Http\Request;
+
+add_action(
+    'wpsail_http_request_wcmapi_payment_capture',
+    static function (Request $request): void {
+        // Run logic for this route before its controller is resolved.
+    },
+);
+```
+
+There is no unscoped `wpsail_http_request` action or separate
+`wpsail_authentication_*` action family. Register authentication and other
+request middleware on the appropriate scoped `wpsail_http_request_*` action.
 
 ## Controller requests
 
