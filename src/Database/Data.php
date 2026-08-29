@@ -2,8 +2,12 @@
 
 namespace WPSail\Database;
 
+use Aimeos\Macro\Macroable;
+
 abstract class Data
 {
+    use Macroable;
+
     public int $id;
 
     protected array $data;
