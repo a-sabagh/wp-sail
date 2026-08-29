@@ -25,7 +25,7 @@ abstract class Data
             $this->set_data($data);
         } elseif (isset($data) && is_numeric($data) && $data > 0) {
             $id = $data;
-            $object = $this->find($id);
+            $object = static::find($id);
             if (is_object($object) && $object instanceof self) {
                 $this->set_id($id)->set_data($object->get_data());
             }
@@ -38,7 +38,7 @@ abstract class Data
      * @param int $id The object identifier.
      * @return mixed
      */
-    abstract public function find(int $id);
+    abstract public static function find(int $id);
 
     /**
      * Create a new database query builder.
