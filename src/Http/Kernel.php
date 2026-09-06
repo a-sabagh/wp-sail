@@ -13,6 +13,7 @@ use UnexpectedValueException;
 use WPSail\Http\Exception\RouteNotFoundException;
 use WPSail\Http\Response\JsonResponse;
 use WPSail\Http\Response\ViewResponse;
+use WPSail\Utility\Str;
 
 class Kernel
 {
@@ -102,8 +103,8 @@ class Kernel
         $action = get_query_var("wpsail_action") ?: 'index';
 
         $endpoint_tolower = strtolower($endpoint);
-        $module_tolower = strtolower($module);
-        $action_tolower = strtolower($action);
+        $module_tolower = Str::snake($module);
+        $action_tolower = Str::snake($action);
 
         $route_expression = "{$endpoint_tolower}/{$module_tolower}/{$action_tolower}";
 
