@@ -2,12 +2,15 @@
 
 namespace WPSail\Http\Response;
 
+use Aimeos\Macro\Macroable;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class ViewResponse extends Response
 {
+    use Macroable;
+
     /**
      * Create an HTML response by rendering a PHP template file.
      *

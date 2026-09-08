@@ -2,12 +2,15 @@
 
 namespace WPSail\Http;
 
+use Aimeos\Macro\Macroable;
 use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 
 class Request extends SymfonyRequest
 {
+    use Macroable;
+
     /**
      * Capture the current WordPress request.
      *
