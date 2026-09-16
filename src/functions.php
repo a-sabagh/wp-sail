@@ -22,10 +22,10 @@ if (! function_exists('data_get')) {
  *
  * @param  string  $endpoint
  * @param  string  $class
- * @param  string  $action
+ * @param  string|null  $action
  * @return string
  */
-function wpsail_get_permalink($endpoint, $class, $action)
+function wpsail_get_permalink($endpoint, $class, ?string $action=null)
 {
     return home_url("{$endpoint}/{$class}/{$action}");
 }
