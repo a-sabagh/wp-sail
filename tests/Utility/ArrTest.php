@@ -138,6 +138,36 @@ final class ArrTest extends TestCase
         $this->assertSame(['name' => 'Sail', 'profile' => ['age' => 30]], $array);
     }
 
+    public function test_flatten_returns_all_leaf_values_in_a_single_level(): void
+    {
+        $array = [
+            'name' => 'Sail',
+            'profile' => [
+                'contact' => ['email' => 'sail@example.com'],
+                'tags' => ['php', 'wordpress'],
+            ],
+            'active' => true,
+        ];
+
+        $this->assertSame([
+            'Sail',
+            'sail@example.com',
+            'php',
+            'wordpress',
+            true,
+        ], Arr::flatten($array));
+    }
+
+    public function test_flatten_respects_the_requested_depth(): void
+    {
+        $array = ['profile' => ['contact' => ['email' => 'sail@example.com']]];
+
+        $this->assertSame(
+            [['email' => 'sail@example.com']],
+            Arr::flatten($array, 1),
+        );
+    }
+
     public function test_query_uses_rfc3986_encoding(): void
     {
         $query = Arr::query(['search' => 'sail boat', 'symbols' => 'a&b']);
