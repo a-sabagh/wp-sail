@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ac1e86d5b8375abc17e28c9484019071",
+    "content-hash": "883b9781c198f326451c41e0888b1174",
     "packages": [
         {
             "name": "aimeos/macro",
@@ -46,6 +46,58 @@
                 "source": "https://github.com/aimeos/macro/tree/1.0.2"
             },
             "time": "2024-11-07T11:16:00+00:00"
+        },
+        {
+            "name": "degraciamathieu/manager",
+            "version": "v3.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/DeGraciaMathieu/Manager.git",
+                "reference": "0c074f2138b92b2004d18442e72bd3b5d238d309"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/DeGraciaMathieu/Manager/zipball/0c074f2138b92b2004d18442e72bd3b5d238d309",
+                "reference": "0c074f2138b92b2004d18442e72bd3b5d238d309",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^1.10",
+                "phpunit/phpunit": "^9.0",
+                "symfony/var-dumper": "^5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DeGraciaMathieu\\Manager\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "De Gracia Mathieu",
+                    "email": "contact@degracia-mathieu.fr"
+                }
+            ],
+            "description": "Implementation of the Manager pattern existing in Laravel framework.",
+            "homepage": "https://github.com/degraciamathieu/manager",
+            "keywords": [
+                "DesignPattern",
+                "laravel",
+                "manager",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/DeGraciaMathieu/Manager/issues",
+                "source": "https://github.com/DeGraciaMathieu/Manager/tree/v3.1.0"
+            },
+            "time": "2025-12-06T12:12:12+00:00"
         },
         {
             "name": "fakerphp/faker",
