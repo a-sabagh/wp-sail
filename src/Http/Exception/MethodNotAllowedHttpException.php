@@ -16,12 +16,14 @@ class MethodNotAllowedHttpException extends RuntimeException
         public Request $request,
         ?Throwable $previous = null,
     ) {
+        $attributes = $request->attributes;
+
         parent::__construct(
             sprintf(
                 __('Method not allowed "%1$s/%2$s/%3$s".', 'wp-sail'),
-                $request->attributes()->get('endpoint'),
-                $request->attributes()->get('controller'),
-                $request->attributes()->get('action'),
+                $attributes->get('_endpoint'),
+                $attributes->get('_controller'),
+                $attributes->get('_action'),
             ),
             Response::HTTP_METHOD_NOT_ALLOWED,
             $previous,
