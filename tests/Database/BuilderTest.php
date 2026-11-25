@@ -208,4 +208,9 @@ final class BuilderTest extends TestCase
     {
         $this->assertSame(['id' => 1], (new Builder())->table('p')->find('id', 1));
     }
+
+    public function test_create_returns_the_inserted_id(): void
+    {
+        $this->assertSame(5, (new Builder())->table('p')->create(['a' => 1]));
+    }
 }

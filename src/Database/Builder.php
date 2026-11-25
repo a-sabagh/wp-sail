@@ -460,12 +460,12 @@ class Builder
     /**
      * alias for insert method
      *
+     * @param array $data The data to insert as an associative array.
      * @return int|false The ID of the inserted row, or false on failure.
-     * @return void
      */
     public function create($data)
     {
-        $this->insert($data);
+        return $this->insert($data);
     }
 
     /**
