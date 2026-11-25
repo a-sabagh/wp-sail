@@ -561,6 +561,11 @@ class Builder
     /**
      * Validate a column identifier and apply the site prefix when needed.
      * Accepts `column`, `table.column` and `table.*`.
+     * 
+     * @param string $column The column identifier to validate.
+     * @param bool   $qualify Whether to apply the site prefix when needed.
+     * @return string The validated column identifier, optionally prefixed.
+     * @throws InvalidArgumentException If the column identifier is invalid.
      */
     private function column_name(string $column, bool $qualify = true): string
     {
@@ -575,6 +580,10 @@ class Builder
 
     /**
      * Validate a comparison operator against an allow-list.
+     * 
+     * @param string $operator The comparison operator to validate.
+     * @return string The normalized comparison operator.
+     * @throws InvalidArgumentException If the operator is not supported.
      */
     private function operator(string $operator): string
     {
@@ -589,6 +598,10 @@ class Builder
 
     /**
      * Turn a PHP value into a safely escaped SQL literal using wpdb::prepare().
+     * 
+     * @param mixed $value The PHP value to convert into an SQL literal.
+     * @return string The safely escaped SQL literal.
+     * @throws InvalidArgumentException If the value has an unsupported type.
      */
     private function quote(mixed $value): string
     {
@@ -641,6 +654,9 @@ class Builder
 
     /**
      * Remember a table alias declared as `table as alias`.
+     * 
+     * @param string $table_name The table reference containing the alias.
+     * @return void
      */
     private function register_alias(string $table_name): void
     {
