@@ -173,4 +173,34 @@ final class BuilderTest extends TestCase
 
         $this->assertSame("DELETE FROM wp_p WHERE name = 'a\\' OR 1=1 --' AND id = 3", $builder->query);
     }
+
+    public function test_qualified_columns_receive_the_prefix_once(): void
+    {
+        $this->assertStringContainsString(
+            'wp_products.id = 3',
+            $this->sql((new Builder())->table('products')->where('products.id', '=', 3)),
+        );
+
+        $sql = $this->sql((new Builder())->table('orders')->where('wp_orders.id', '=', 3));
+        $this->assertStringContainsString(' wp_orders.id = 3', $sql);
+        $this->assertStringNotContainsString('wp_wp_', $sql);
+    }
+
+    public function test_table_aliases_are_not_prefixed(): void
+    {
+        $sql = $this->sql((new Builder())->table('products as p')->where('p.id', '=', 3));
+
+        $this->assertStringContainsString(' p.id = 3', $sql);
+        $this->assertStringNotContainsString('wp_p.', $sql);
+    }
+
+    public function test_alias_regex_only_matches_qualified_columns(): void
+    {
+        $builder = new Builder();
+
+        $this->assertTrue($builder->alias_regex('products.id'));
+        $this->assertTrue($builder->alias_regex('products.id as pid'));
+        $this->assertFalse($builder->alias_regex('id'));
+        $this->assertFalse($builder->alias_regex('COUNT(p.id)'));
+    }
 }

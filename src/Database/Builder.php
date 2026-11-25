@@ -20,6 +20,7 @@ class Builder
     private array $where_in = [];
     private array $where_between = [];
     private array $order_by = [];
+    private array $aliases = [];
     private ?string $group_by = null;
     private ?int $offset = null;
     private ?int $limit = null;
@@ -72,6 +73,8 @@ class Builder
     public function table($table)
     {
         $this->table = $this->prefix . $table;
+
+        $this->register_alias($table);
 
         return $this;
     }
@@ -146,6 +149,8 @@ class Builder
     {
         $type = strtoupper($type) ?: 'INNER';
         $table = $this->prefix . $table_name;
+
+        $this->register_alias($table_name);
 
         $condition = array_map(
             function ($element) {
@@ -611,17 +616,37 @@ class Builder
     }
 
     /**
-     * Check if the query string contains a table alias.
+     * Determine whether a column reference is qualified by a table that still
+     * needs the WordPress prefix (e.g. `products.id` or `products.id as pid`).
      *
-     * @param string $query_string The query string to check.
-     * @return bool True if an alias exists, false otherwise.
+     * Function calls, unqualified columns, columns already starting with the
+     * site prefix, and columns qualified by a table alias are left untouched.
+     *
+     * @param string $query_string The column reference to check.
+     * @return bool True if the prefix should be prepended, false otherwise.
      */
     public function alias_regex(string $query_string)
     {
-        $query_string_tolower = strtolower($query_string);
+        $pattern = '/^([A-Za-z_][A-Za-z0-9_$]*)\.(?:[A-Za-z_][A-Za-z0-9_$]*|\*)(?:\s+as\s+[A-Za-z_][A-Za-z0-9_$]*)?$/i';
 
-        return strpos('.', $query_string_tolower)
-            && !strpos('as', $query_string_tolower);
+        if (1 !== preg_match($pattern, trim($query_string), $matches)) {
+            return false;
+        }
+
+        $qualifier = $matches[1];
+
+        return !str_starts_with($qualifier, $this->prefix)
+            && !in_array(strtolower($qualifier), $this->aliases, true);
+    }
+
+    /**
+     * Remember a table alias declared as `table as alias`.
+     */
+    private function register_alias(string $table_name): void
+    {
+        if (1 === preg_match('/\s+as\s+([A-Za-z_][A-Za-z0-9_$]*)$/i', trim($table_name), $matches)) {
+            $this->aliases[] = strtolower($matches[1]);
+        }
     }
 
 }
