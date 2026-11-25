@@ -8,7 +8,7 @@ abstract class Data
 {
     use Macroable;
 
-    public int $id;
+    public ?int $id = null;
 
     protected array $data;
 
@@ -57,7 +57,7 @@ abstract class Data
     /**
      * Get the object identifier.
      *
-     * @return int
+     * @return int|null The identifier, or null for a record that was never saved.
      */
     public function get_id()
     {
@@ -127,10 +127,16 @@ abstract class Data
     /**
      * Remove the object from persistent storage.
      *
+     * Does nothing for an object that was never saved.
+     *
      * @return void
      */
     public function remove()
     {
+        if (null === $this->id) {
+            return;
+        }
+
         $this->delete($this->id);
     }
 

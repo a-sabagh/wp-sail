@@ -41,6 +41,30 @@ final class DataTest extends TestCase
         $this->assertSame(['name' => 'Sail'], $record->get_data());
         $this->assertSame([7], StaticData::$find_calls);
     }
+
+    public function test_new_record_has_no_identifier(): void
+    {
+        $record = new PersistentData(['name' => 'Sail']);
+
+        $this->assertNull($record->get_id());
+    }
+
+    public function test_remove_is_a_no_op_for_an_unsaved_record(): void
+    {
+        $record = new PersistentData(['name' => 'Sail']);
+        $record->remove();
+
+        $this->assertSame([], $record->deleted);
+    }
+
+    public function test_remove_deletes_by_identifier(): void
+    {
+        $record = new PersistentData(['name' => 'Sail']);
+        $record->set_id(7);
+        $record->remove();
+
+        $this->assertSame([7], $record->deleted);
+    }
 }
 
 final class StaticData extends Data
@@ -80,5 +104,44 @@ final class StaticData extends Data
     public function delete(int $id = null)
     {
         return false;
+    }
+}
+
+final class PersistentData extends Data
+{
+    public int|false $next_id = 1;
+    public int|false $update_result = 1;
+    public array $created = [];
+    public array $updated = [];
+    public array $deleted = [];
+
+    protected array $data = [
+        'name' => null,
+    ];
+
+    public static function find(int $id)
+    {
+        return null;
+    }
+
+    public function create(array $data = [])
+    {
+        $this->created[] = $data;
+
+        return $this->next_id;
+    }
+
+    public function update(int $id = null, array $data = [])
+    {
+        $this->updated[] = [$id, $data];
+
+        return $this->update_result;
+    }
+
+    public function delete(int $id = null)
+    {
+        $this->deleted[] = $id;
+
+        return 1;
     }
 }
