@@ -5,6 +5,7 @@ namespace WPSail\Database;
 use wpdb;
 use Aimeos\Macro\Macroable;
 use BadMethodCallException;
+use InvalidArgumentException;
 
 class Builder
 {
@@ -168,7 +169,8 @@ class Builder
      */
     public function where_between($column, $begin, $end)
     {
-        $this->where_between[] = [$column,$begin,$end];
+        $column = $this->column_name($column);
+        $this->where_between[] = [$column, $this->quote($begin), $this->quote($end)];
 
         return $this;
     }
@@ -185,10 +187,21 @@ class Builder
     public function where($first_operand, $operator, $second_operand, $type = '')
     {
         $type = strtoupper($type);
-        $second_operand = ('integer' != gettype($second_operand)) ? "'{$second_operand}'" : $second_operand;
-        $first_operand = ($this->alias_regex($first_operand)) ? $this->prefix . $first_operand : $first_operand;
+       
+        $first_operand = $this->column_name($first_operand);
+        $operator = $this->operator($operator);
 
-        $this->where[] = [$first_operand,$operator,$second_operand,$type];
+        if (null === $second_operand) {
+            $operator = match ($operator) {
+                '=' => 'IS',
+                '!=', '<>' => 'IS NOT',
+                default => throw new InvalidArgumentException(
+                    sprintf('Operator %s cannot be used with a NULL value.', $operator),
+                ),
+            };
+        }
+
+        $this->where[] = [$first_operand, $operator, $this->quote($second_operand), $type];
 
         return $this;
     }
@@ -217,11 +230,10 @@ class Builder
      */
     public function where_in($column, $range = [])
     {
-        $values = array_map(function ($element) {
-            return ('integer' != gettype($element)) ? "'{$element}'" : $element;
-        }, $range);
+        $column = $this->column_name($column);
+        $values = array_map(fn ($element) => $this->quote($element), array_values($range));
 
-        $this->where_in[] = [$column,$values];
+        $this->where_in[] = [$column, $values ?: ['NULL']];
 
         return $this;
     }
@@ -396,14 +408,11 @@ class Builder
 
         $query = "UPDATE {$table} SET ";
 
-        $data = array_map(function ($key, $value) {
-            if (is_null($value)) {
-                $value_finalized = 'NULL';
-            } else {
-                $value_finalized = ('integer' == gettype($value)) ? $value : "'{$value}'";
-            }
-            return "{$key}={$value_finalized}";
-        }, array_keys($data), $data);
+        $data = array_map(
+            fn ($key, $value) => $this->column_name((string) $key, false) . '=' . $this->quote($value),
+            array_keys($data),
+            $data,
+        );
 
         $update_data_query = implode(',', $data);
         $query .= "{$update_data_query} ";
@@ -472,11 +481,20 @@ class Builder
     /**
      * Execute a raw SQL query without processing the result.
      *
+     * The SQL string is executed as written. Never concatenate untrusted
+     * input into it: use %d, %f and %s placeholders and pass the values as
+     * $bindings, which are bound through wpdb::prepare().
+     *
      * @param string $sql The raw SQL query to execute.
+     * @param array $bindings Values for the placeholders in $sql.
      * @return int|false The number of affected rows, or false on failure.
      */
-    public function statement($sql)
+    public function statement($sql, array $bindings = [])
     {
+        if (!empty($bindings)) {
+            $sql = $this->wpdb->prepare($sql, ...array_values($bindings));
+        }
+
         $this->query = $sql;
 
         return $this->wpdb->query($sql);
@@ -525,15 +543,71 @@ class Builder
         }
 
         if (!empty($this->where_between)) {
-            foreach ($this->where_between as [$column,$begin,$end]) {
+            foreach ($this->where_between as [$column, $begin, $end]) {
                 $logic = ($condition_count > 0) ? "AND " : "WHERE ";
-                $begin_formatted = is_numeric($begin) ? $begin : "'{$begin}'";
-                $end_formatted = is_numeric($end) ? $end : "'{$end}'";
-                $query .= "{$logic} {$column} BETWEEN {$begin_formatted} AND {$end_formatted} ";
+                $query .= "{$logic} {$column} BETWEEN {$begin} AND {$end} ";
                 $condition_count++;
             }
         }
+
         return $query;
+    }
+
+    /**
+     * Validate a column identifier and apply the site prefix when needed.
+     * Accepts `column`, `table.column` and `table.*`.
+     */
+    private function column_name(string $column, bool $qualify = true): string
+    {
+        $column = trim($column);
+
+        if (1 !== preg_match('/^[A-Za-z_][A-Za-z0-9_$]*(?:\.(?:[A-Za-z_][A-Za-z0-9_$]*|\*))?$/', $column)) {
+            throw new InvalidArgumentException(sprintf('Invalid column identifier "%s".', $column));
+        }
+
+        return ($qualify && $this->alias_regex($column)) ? $this->prefix . $column : $column;
+    }
+
+    /**
+     * Validate a comparison operator against an allow-list.
+     */
+    private function operator(string $operator): string
+    {
+        $operator = strtoupper(trim(preg_replace('/\s+/', ' ', $operator)));
+
+        if (!in_array($operator, ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE'], true)) {
+            throw new InvalidArgumentException(sprintf('Invalid comparison operator "%s".', $operator));
+        }
+
+        return $operator;
+    }
+
+    /**
+     * Turn a PHP value into a safely escaped SQL literal using wpdb::prepare().
+     */
+    private function quote(mixed $value): string
+    {
+        if (null === $value) {
+            return 'NULL';
+        }
+
+        if (is_bool($value)) {
+            $value = (int) $value;
+        }
+
+        if (is_int($value)) {
+            return $this->wpdb->prepare('%d', $value);
+        }
+
+        if (is_float($value)) {
+            return $this->wpdb->prepare('%f', $value);
+        }
+
+        if (is_string($value) || $value instanceof \Stringable) {
+            return $this->wpdb->prepare('%s', (string) $value);
+        }
+
+        throw new InvalidArgumentException(sprintf('Unsupported value of type %s.', get_debug_type($value)));
     }
 
     /**
