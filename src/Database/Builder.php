@@ -394,11 +394,11 @@ class Builder
      *
      * @param string $name primary key column name
      * @param int|string $key primary key value
-     * @return array
+     * @return array|false The matching row, or false when none exists.
      */
     public function find($name, $key)
     {
-        $this->where($name, '=', $key)->first();
+        return $this->where($name, '=', $key)->first();
     }
 
     /**

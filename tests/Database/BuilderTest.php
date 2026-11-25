@@ -203,4 +203,9 @@ final class BuilderTest extends TestCase
         $this->assertFalse($builder->alias_regex('id'));
         $this->assertFalse($builder->alias_regex('COUNT(p.id)'));
     }
+
+    public function test_find_returns_the_row(): void
+    {
+        $this->assertSame(['id' => 1], (new Builder())->table('p')->find('id', 1));
+    }
 }
