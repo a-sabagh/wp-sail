@@ -110,18 +110,35 @@ abstract class Data
     /**
      * Create or update the object in persistent storage.
      *
-     * @param int|null $id An optional object identifier.
-     * @return int|false
+     * When $id is given it is assigned to the object first. An object with a
+     * positive identifier is updated, any other object is created and receives
+     * the identifier returned by create(). An update that matches the row but
+     * changes nothing (0 affected rows) still counts as a success.
+     *
+     * @param int|null $id An optional object identifier to save under.
+     * @return int|false The object identifier, or false on failure.
      */
-    public function save(int $id = null)
+    public function save(?int $id = null)
     {
-        if (is_numeric($this->id)) {
-            $result = $this->update($this->id, $this->data);
-            return ($result) ? $this->id : false;
-        } else {
-            $this->id = $this->create($this->data);
-            return $this->id;
+        if (null !== $id) {
+            $this->id = $id;
         }
+
+        if (null !== $this->id && $this->id > 0) {
+            $result = $this->update($this->id, $this->data);
+
+            return (false !== $result) ? $this->id : false;
+        }
+
+        $new_id = $this->create($this->data);
+
+        if (!$new_id) {
+            return false;
+        }
+
+        $this->id = (int) $new_id;
+
+        return $this->id;
     }
 
     /**
