@@ -179,8 +179,11 @@ Builder methods are chainable until an execution method is called:
 | `limit($limit)` / `take($limit)` | Limit the number of returned rows. |
 | `offset($offset)` | Skip rows. The offset is applied when a positive limit is set. |
 
-For qualified join columns, use the builder's public `prefix` property so the
-query also works on sites with a non-default prefix:
+Qualified columns such as `orders.customer_id` get the site prefix applied
+automatically. Columns that already start with the prefix, function calls and
+columns qualified by an alias declared with `table('orders as o')` are left
+untouched, so you can still build the prefix yourself with the public `prefix`
+property:
 
 ```php
 $query = (new Builder())->table('orders');
@@ -218,18 +221,24 @@ $deleted = (new Builder())
     ->delete();
 ```
 
-`insert()` returns the inserted ID. `update()`, `delete()`, `truncate()`, and
-`statement()` return the value produced by the corresponding `wpdb` operation.
-`truncate()` removes every row from the selected table, while `statement($sql)`
-executes a raw SQL statement. After a select, update, delete, truncate, or raw
+`insert()` returns the inserted ID, and `create()` is an alias that returns it
+too. `find($column, $value)` returns the matching row or `false`. `update()`,
+`delete()`, `truncate()`, and `statement()` return the value produced by the
+corresponding `wpdb` operation. `truncate()` removes every row from the
+selected table, while `statement($sql, $bindings = [])` executes a raw SQL
+statement; values passed in `$bindings` are bound to its `%d`, `%f` and `%s`
+placeholders with `wpdb::prepare()`. After a select, update, delete, truncate, or raw
 statement, the generated SQL is available in the builder's public `query`
 property for debugging.
 
-> **SQL safety:** Builder values, identifiers, operators, ordering, and raw
-> statements are interpolated into SQL; the class does not bind parameters or
-> call `wpdb::prepare()`. Do not pass request data or other untrusted input to
-> these methods. Use WordPress's prepared-query APIs when any part of a query is
-> dynamic.
+> **SQL safety:** Values passed to `where()`, `or_where()`, `where_in()`,
+> `where_between()` and `update()` are escaped with `wpdb::prepare()`. Column
+> identifiers must be plain `column`, `table.column` or `table.*` names and
+> `where()` operators must be one of `=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`,
+> `LIKE` or `NOT LIKE`; anything else throws an `InvalidArgumentException`.
+> `select()`, `join()`, `group_by()`, `order_by()` and the raw SQL of
+> `statement()` are still interpolated as written, so never pass request data to
+> them. Give `statement()` placeholders and `$bindings` for dynamic values.
 
 ## Custom route maps
 
