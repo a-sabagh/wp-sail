@@ -1,5 +1,6 @@
 <?php
 
+use WPSail\Database\Builder;
 use WPSail\Utility\Arr;
 
 if (! function_exists('data_get')) {
@@ -28,6 +29,13 @@ if (! function_exists('data_get')) {
 function wpsail_get_permalink($endpoint, $class, ?string $action=null)
 {
     return home_url("{$endpoint}/{$class}/{$action}");
+}
+
+function wpsail_query_builder(): Builder
+{
+    global $wpsail;
+
+    return $wpsail->container()->make(Builder::class);
 }
 
 function wpsail_get_string_nullable($value)

@@ -48,7 +48,7 @@ abstract class Data
     public function query()
     {
         if (!$this->builder instanceof Builder) {
-            $this->builder = new Builder();
+            $this->builder = wpsail_query_builder();
         }
 
         return $this->builder;
