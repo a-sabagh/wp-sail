@@ -5,6 +5,7 @@ namespace WPSail\Database;
 use wpdb;
 use Aimeos\Macro\Macroable;
 use BadMethodCallException;
+use InvalidArgumentException;
 
 class Builder
 {
@@ -19,6 +20,7 @@ class Builder
     private array $where_in = [];
     private array $where_between = [];
     private array $order_by = [];
+    private array $aliases = [];
     private ?string $group_by = null;
     private ?int $offset = null;
     private ?int $limit = null;
@@ -71,6 +73,8 @@ class Builder
     public function table($table)
     {
         $this->table = $this->prefix . $table;
+
+        $this->register_alias($table);
 
         return $this;
     }
@@ -146,6 +150,8 @@ class Builder
         $type = strtoupper($type) ?: 'INNER';
         $table = $this->prefix . $table_name;
 
+        $this->register_alias($table_name);
+
         $condition = array_map(
             function ($element) {
                 return($this->alias_regex($element)) ? $this->prefix . $element : $element;
@@ -168,7 +174,8 @@ class Builder
      */
     public function where_between($column, $begin, $end)
     {
-        $this->where_between[] = [$column,$begin,$end];
+        $column = $this->column_name($column);
+        $this->where_between[] = [$column, $this->quote($begin), $this->quote($end)];
 
         return $this;
     }
@@ -185,10 +192,21 @@ class Builder
     public function where($first_operand, $operator, $second_operand, $type = '')
     {
         $type = strtoupper($type);
-        $second_operand = ('integer' != gettype($second_operand)) ? "'{$second_operand}'" : $second_operand;
-        $first_operand = ($this->alias_regex($first_operand)) ? $this->prefix . $first_operand : $first_operand;
+       
+        $first_operand = $this->column_name($first_operand);
+        $operator = $this->operator($operator);
 
-        $this->where[] = [$first_operand,$operator,$second_operand,$type];
+        if (null === $second_operand) {
+            $operator = match ($operator) {
+                '=' => 'IS',
+                '!=', '<>' => 'IS NOT',
+                default => throw new InvalidArgumentException(
+                    sprintf('Operator %s cannot be used with a NULL value.', $operator),
+                ),
+            };
+        }
+
+        $this->where[] = [$first_operand, $operator, $this->quote($second_operand), $type];
 
         return $this;
     }
@@ -217,11 +235,10 @@ class Builder
      */
     public function where_in($column, $range = [])
     {
-        $values = array_map(function ($element) {
-            return ('integer' != gettype($element)) ? "'{$element}'" : $element;
-        }, $range);
+        $column = $this->column_name($column);
+        $values = array_map(fn ($element) => $this->quote($element), array_values($range));
 
-        $this->where_in[] = [$column,$values];
+        $this->where_in[] = [$column, $values ?: ['NULL']];
 
         return $this;
     }
@@ -377,11 +394,11 @@ class Builder
      *
      * @param string $name primary key column name
      * @param int|string $key primary key value
-     * @return array
+     * @return array|false The matching row, or false when none exists.
      */
     public function find($name, $key)
     {
-        $this->where($name, '=', $key)->first();
+        return $this->where($name, '=', $key)->first();
     }
 
     /**
@@ -396,14 +413,11 @@ class Builder
 
         $query = "UPDATE {$table} SET ";
 
-        $data = array_map(function ($key, $value) {
-            if (is_null($value)) {
-                $value_finalized = 'NULL';
-            } else {
-                $value_finalized = ('integer' == gettype($value)) ? $value : "'{$value}'";
-            }
-            return "{$key}={$value_finalized}";
-        }, array_keys($data), $data);
+        $data = array_map(
+            fn ($key, $value) => $this->column_name((string) $key, false) . '=' . $this->quote($value),
+            array_keys($data),
+            $data,
+        );
 
         $update_data_query = implode(',', $data);
         $query .= "{$update_data_query} ";
@@ -446,12 +460,12 @@ class Builder
     /**
      * alias for insert method
      *
+     * @param array $data The data to insert as an associative array.
      * @return int|false The ID of the inserted row, or false on failure.
-     * @return void
      */
     public function create($data)
     {
-        $this->insert($data);
+        return $this->insert($data);
     }
 
     /**
@@ -472,11 +486,20 @@ class Builder
     /**
      * Execute a raw SQL query without processing the result.
      *
+     * The SQL string is executed as written. Never concatenate untrusted
+     * input into it: use %d, %f and %s placeholders and pass the values as
+     * $bindings, which are bound through wpdb::prepare().
+     *
      * @param string $sql The raw SQL query to execute.
+     * @param array $bindings Values for the placeholders in $sql.
      * @return int|false The number of affected rows, or false on failure.
      */
-    public function statement($sql)
+    public function statement($sql, array $bindings = [])
     {
+        if (!empty($bindings)) {
+            $sql = $this->wpdb->prepare($sql, ...array_values($bindings));
+        }
+
         $this->query = $sql;
 
         return $this->wpdb->query($sql);
@@ -525,29 +548,121 @@ class Builder
         }
 
         if (!empty($this->where_between)) {
-            foreach ($this->where_between as [$column,$begin,$end]) {
+            foreach ($this->where_between as [$column, $begin, $end]) {
                 $logic = ($condition_count > 0) ? "AND " : "WHERE ";
-                $begin_formatted = is_numeric($begin) ? $begin : "'{$begin}'";
-                $end_formatted = is_numeric($end) ? $end : "'{$end}'";
-                $query .= "{$logic} {$column} BETWEEN {$begin_formatted} AND {$end_formatted} ";
+                $query .= "{$logic} {$column} BETWEEN {$begin} AND {$end} ";
                 $condition_count++;
             }
         }
+
         return $query;
     }
 
     /**
-     * Check if the query string contains a table alias.
+     * Validate a column identifier and apply the site prefix when needed.
+     * Accepts `column`, `table.column` and `table.*`.
+     * 
+     * @param string $column The column identifier to validate.
+     * @param bool   $qualify Whether to apply the site prefix when needed.
+     * @return string The validated column identifier, optionally prefixed.
+     * @throws InvalidArgumentException If the column identifier is invalid.
+     */
+    private function column_name(string $column, bool $qualify = true): string
+    {
+        $column = trim($column);
+
+        if (1 !== preg_match('/^[A-Za-z_][A-Za-z0-9_$]*(?:\.(?:[A-Za-z_][A-Za-z0-9_$]*|\*))?$/', $column)) {
+            throw new InvalidArgumentException(sprintf('Invalid column identifier "%s".', $column));
+        }
+
+        return ($qualify && $this->alias_regex($column)) ? $this->prefix . $column : $column;
+    }
+
+    /**
+     * Validate a comparison operator against an allow-list.
+     * 
+     * @param string $operator The comparison operator to validate.
+     * @return string The normalized comparison operator.
+     * @throws InvalidArgumentException If the operator is not supported.
+     */
+    private function operator(string $operator): string
+    {
+        $operator = strtoupper(trim(preg_replace('/\s+/', ' ', $operator)));
+
+        if (!in_array($operator, ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE'], true)) {
+            throw new InvalidArgumentException(sprintf('Invalid comparison operator "%s".', $operator));
+        }
+
+        return $operator;
+    }
+
+    /**
+     * Turn a PHP value into a safely escaped SQL literal using wpdb::prepare().
+     * 
+     * @param mixed $value The PHP value to convert into an SQL literal.
+     * @return string The safely escaped SQL literal.
+     * @throws InvalidArgumentException If the value has an unsupported type.
+     */
+    private function quote(mixed $value): string
+    {
+        if (null === $value) {
+            return 'NULL';
+        }
+
+        if (is_bool($value)) {
+            $value = (int) $value;
+        }
+
+        if (is_int($value)) {
+            return $this->wpdb->prepare('%d', $value);
+        }
+
+        if (is_float($value)) {
+            return $this->wpdb->prepare('%f', $value);
+        }
+
+        if (is_string($value) || $value instanceof \Stringable) {
+            return $this->wpdb->prepare('%s', (string) $value);
+        }
+
+        throw new InvalidArgumentException(sprintf('Unsupported value of type %s.', get_debug_type($value)));
+    }
+
+    /**
+     * Determine whether a column reference is qualified by a table that still
+     * needs the WordPress prefix (e.g. `products.id` or `products.id as pid`).
      *
-     * @param string $query_string The query string to check.
-     * @return bool True if an alias exists, false otherwise.
+     * Function calls, unqualified columns, columns already starting with the
+     * site prefix, and columns qualified by a table alias are left untouched.
+     *
+     * @param string $query_string The column reference to check.
+     * @return bool True if the prefix should be prepended, false otherwise.
      */
     public function alias_regex(string $query_string)
     {
-        $query_string_tolower = strtolower($query_string);
+        $pattern = '/^([A-Za-z_][A-Za-z0-9_$]*)\.(?:[A-Za-z_][A-Za-z0-9_$]*|\*)(?:\s+as\s+[A-Za-z_][A-Za-z0-9_$]*)?$/i';
 
-        return strpos('.', $query_string_tolower)
-            && !strpos('as', $query_string_tolower);
+        if (1 !== preg_match($pattern, trim($query_string), $matches)) {
+            return false;
+        }
+
+        $qualifier = $matches[1];
+
+        return !str_starts_with($qualifier, $this->prefix)
+            && !in_array(strtolower($qualifier), $this->aliases, true);
+    }
+
+    /**
+     * Remember a table alias declared as `table as alias`.
+     * 
+     * @param string $table_name The table reference containing the alias.
+     * @return void
+     */
+    private function register_alias(string $table_name): void
+    {
+        if (1 === preg_match('/\s+as\s+([A-Za-z_][A-Za-z0-9_$]*)$/i', trim($table_name), $matches)) {
+            $this->aliases[] = strtolower($matches[1]);
+        }
     }
 
 }
